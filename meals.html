@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美食抽签小程序 - 预览版</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --card-bg: #16213e;
+            --accent: #e94560;
+            --gold: #f0c060;
+            --text: #e0e0e0;
+            --text-light: #b0b0b0;
+            --border: #2a2a4a;
+            --btn-bg: #e94560;
+            --btn-hover: #c0392b;
+            --tag-chinese: #e74c3c;
+            --tag-western: #3498db;
+            --tag-japanese: #e67e22;
+            --tag-korean: #9b59b6;
+            --tag-seasian: #1abc9c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at top, rgba(233, 68, 96, 0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at bottom, rgba(240, 192, 96, 0.06) 0%, transparent 60%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .phone-frame {
+            width: 100%;
+            max-width: 420px;
+            background: var(--card-bg);
+            border-radius: 32px;
+            padding: 20px 16px 24px;
+            box-shadow:
+                0 20px 60px rgba(0, 0, 0, 0.5),
+                0 0 0 2px var(--border),
+                inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            position: relative;
+            min-height: 700px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Notch */
+        .notch {
+            width: 100px;
+            height: 6px;
+            background: #0d0d1a;
+            border-radius: 20px;
+            margin: 0 auto 16px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .header .icon-row {
+            font-size: 40px;
+            margin-bottom: 4px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .header .subtitle {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        /* Language Switcher */
+        .lang-switch {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .lang-btn {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            color: var(--text-light);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .lang-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(233, 68, 96, 0.35);
+        }
+        .lang-btn:hover {
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        /* Card Area */
+        .card-container {
+            flex: 1;
+            perspective: 1000px;
+            margin-bottom: 16px;
+            min-height: 340px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 340px;
+            min-height: 320px;
+            background: linear-gradient(145deg, #1e2a4a 0%, #1a1f35 100%);
+            border-radius: 24px;
+            padding: 24px 20px;
+            border: 1.5px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+        .card.spinning {
+            animation: cardSpin 0.6s ease-in-out;
+        }
+        @keyframes cardSpin {
+            0% {
+                transform: rotateY(0) scale(1);
+            }
+            30% {
+                transform: rotateY(180deg) scale(0.9);
+            }
+            60% {
+                transform: rotateY(360deg) scale(0.95);
+            }
+            100% {
+                transform: rotateY(360deg) scale(1);
+            }
+        }
+        .card.reveal {
+            animation: revealGlow 0.8s ease-out;
+        }
+        @keyframes revealGlow {
+            0% {
+                box-shadow: 0 10px 40px rgba(233, 68, 96, 0.6);
+            }
+            50% {
+                box-shadow: 0 10px 60px rgba(240, 192, 96, 0.8);
+            }
+            100% {
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            }
+        }
+
+        /* Card sparkle overlay */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent, rgba(255, 255, 255, 0.03), transparent, rgba(255, 255, 255, 0.02), transparent);
+            animation: shimmer 4s linear infinite;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        @keyframes shimmer {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .card .emoji-big {
+            font-size: 60px;
+            text-align: center;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+            animation: bounceIn 0.5s ease-out;
+        }
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .card .category-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin: 0 auto 8px;
+            position: relative;
+            z-index: 1;
+        }
+        .tag-chinese {
+            background: rgba(231, 76, 60, 0.25);
+            color: #f8716b;
+        }
+        .tag-western {
+            background: rgba(52, 152, 219, 0.25);
+            color: #60a5fa;
+        }
+        .tag-japanese {
+            background: rgba(230, 126, 34, 0.25);
+            color: #fbbf6e;
+        }
+        .tag-korean {
+            background: rgba(155, 89, 182, 0.25);
+            color: #c084fc;
+        }
+        .tag-seasian {
+            background: rgba(26, 188, 156, 0.25);
+            color: #34d399;
+        }
+
+        .card .dish-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            letter-spacing: 1px;
+        }
+        .card .section-title {
+            font-size: 12px;
+            color: var(--gold);
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin: 10px 0 4px;
+            position: relative;
+            z-index: 1;
+        }
+        .card .content-text {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+            max-height: 115px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .card .content-text::-webkit-scrollbar {
+            width: 3px;
+        }
+        .card .content-text::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        /* Placeholder state */
+        .card.placeholder .emoji-big {
+            font-size: 70px;
+            opacity: 0.7;
+        }
+        .card.placeholder .dish-name {
+            color: var(--text-light);
+            font-size: 16px;
+        }
+
+        /* Button */
+        .btn-main {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 16px 28px;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(135deg, #e94560 0%, #c0392b 100%);
+            color: #fff;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(233, 68, 96, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-main:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 35px rgba(233, 68, 96, 0.55);
+        }
+        .btn-main:active {
+            transform: scale(0.96);
+            transition: all 0.1s;
+        }
+        .btn-main:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-main .btn-icon {
+            margin-right: 6px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 440px) {
+            .phone-frame {
+                border-radius: 20px;
+                padding: 14px 10px 20px;
+            }
+            .card {
+                min-height: 280px;
+                padding: 18px 14px;
+            }
+            .card .dish-name {
+                font-size: 19px;
+            }
+            .card .content-text {
+                font-size: 12px;
+                max-height: 100px;
+            }
+            .btn-main {
+                font-size: 15px;
+                padding: 14px 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone-frame">
+        <div class="notch"></div>
+
+        <!-- Header -->
+        <div class="header">
+            <div class="icon-row">🍽️</div>
+            <h1>美食抽签</h1>
+            <p class="subtitle">今天吃什么？交给命运</p>
+        </div>
+
+        <!-- Language Switcher -->
+        <div class="lang-switch">
+            <button class="lang-btn active" data-lang="zh" onclick="switchLang('zh')">🇨🇳 普通话</button>
+            <button class="lang-btn" data-lang="yue" onclick="switchLang('yue')">🇭🇰 粤语</button>
+            <button class="lang-btn" data-lang="en" onclick="switchLang('en')">🇬🇧 English</button>
+        </div>
+
+        <!-- Card -->
+        <div class="card-container">
+            <div class="card placeholder" id="dishCard">
+                <div class="emoji-big">🎴</div>
+                <div class="dish-name" id="cardDishName">点击下方按钮抽签</div>
+                <div style="text-align:center;position:relative;z-index:1;">
+                    <span class="category-tag tag-chinese" id="cardCategory">---</span>
+                </div>
+                <div class="section-title" id="cardIngredientsLabel">📋 材料</div>
+                <div class="content-text" id="cardIngredients">等待抽取...</div>
+                <div class="section-title" id="cardStepsLabel">👨‍🍳 做法</div>
+                <div class="content-text" id="cardSteps">点击按钮随机抽取一道菜品</div>
+            </div>
+        </div>
+
+        <!-- Button -->
+        <button class="btn-main" id="drawBtn" onclick="drawDish()">
+            <span class="btn-icon">🎲</span> 随机抽一道菜
+        </button>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== 多语言文本字典 ====================
+        const i18nDict = {
+            zh: {
+                placeholderName: '点击下方按钮抽签',
+                placeholderIngredients: '等待抽取...',
+                placeholderSteps: '点击按钮随机抽取一道菜品',
+                categoryLabel: '菜系',
+                ingredientsLabel: '📋 材料',
+                stepsLabel: '👨‍🍳 做法',
+                drawBtn: '🎲 随机抽一道菜',
+                drawing: '🎰 抽选中...',
+                toastDrawn: '🎉 已为你抽选！',
+                categoryNames: {
+                    chinese: '中餐 🥢',
+                    western: '西餐 🍝',
+                    japanese: '日料 🍣',
+                    korean: '韩餐 🍖',
+                    seasian: '东南亚 🌴'
+                }
+            },
+            yue: {
+                placeholderName: '撳下面掣抽簽啦',
+                placeholderIngredients: '等緊抽簽...',
+                placeholderSteps: '撳個掣隨機抽出菜品',
+                categoryLabel: '菜系',
+                ingredientsLabel: '📋 材料',
+                stepsLabel: '👨‍🍳 做法',
+                drawBtn: '🎲 隨機抽一道菜',
+                drawing: '🎰 抽選緊...',
+                toastDrawn: '🎉 已經幫你抽咗！',
+                categoryNames: {
+                    chinese: '中餐 🥢',
+                    western: '西餐 🍝',
+                    japanese: '日料 🍣',
+                    korean: '韓餐 🍖',
+                    seasian: '東南亞 🌴'
+                }
+            },
+            en: {
+                placeholderName: 'Tap the button to draw',
+                placeholderIngredients: 'Waiting for draw...',
+                placeholderSteps: 'Tap to randomly pick a dish',
+                categoryLabel: 'Category',
+                ingredientsLabel: '📋 Ingredients',
+                stepsLabel: '👨‍🍳 Instructions',
+                drawBtn: '🎲 Draw a Dish',
+                drawing: '🎰 Drawing...',
+                toastDrawn: '🎉 Dish selected!',
+                categoryNames: {
+                    chinese: 'Chinese 🥢',
+                    western: 'Western 🍝',
+                    japanese: 'Japanese 🍣',
+                    korean: 'Korean 🍖',
+                    seasian: 'Southeast Asian 🌴'
+                }
+            }
+        };
+
+        let currentLang = 'zh';
+        let isDrawing = false;
+
+        // ==================== 100道菜品数据库 ====================
+        const dishesDB = [
+            // ===== 中餐 (40道) =====
+            {
+                id: 1,
+                category: 'chinese',
+                emoji: '🌶️',
+                name_zh: '麻婆豆腐',
+                name_yue: '麻婆豆腐',
+                name_en: 'Mapo Tofu',
+                ingredients_zh: '嫩豆腐1块、猪肉末100g、豆瓣酱2勺、花椒粉1勺、蒜末、姜末、葱花、生抽、淀粉、食用油',
+                ingredients_yue: '嫩豆腐1嚿、豬肉碎100g、豆瓣醬2匙羹、花椒粉1匙羹、蒜蓉、薑蓉、蔥花、生抽、生粉、食用油',
+                ingredients_en: '1 block silken tofu, 100g minced pork, 2 tbsp doubanjiang, 1 tsp Sichuan pepper powder, minced garlic, minced ginger, chopped scallions, soy sauce, cornstarch, oil',
+                steps_zh: '1.豆腐切小块焯水备用。2.热油炒肉末至变色，加入豆瓣酱炒出红油。3.加蒜姜炒香，加水煮开。4.放入豆腐轻轻推匀，加生抽调味。5.淀粉勾芡收汁，撒花椒粉和葱花出锅。',
+                steps_yue: '1.豆腐切細粒汆水備用。2.熱油炒肉碎至變色，加豆瓣醬炒出紅油。3.加蒜蓉薑蓉炒香，加水煮滾。4.落豆腐輕輕推勻，加生抽調味。5.用生粉打芡收汁，灑花椒粉同蔥花上碟。',
+                steps_en: '1. Cut tofu into cubes and blanch. 2. Stir-fry minced pork until browned, add doubanjiang. 3. Add garlic and ginger, pour in water and bring to boil. 4. Gently add tofu, season with soy sauce. 5. Thicken with cornstarch slurry, sprinkle Sichuan pepper and scallions.'
+            },
+            {
+                id: 2,
+                category: 'chinese',
+                emoji: '🍖',
+                name_zh: '糖醋里脊',
+                name_yue: '糖醋里脊',
+                name_en: 'Sweet and Sour Pork Tenderloin',
+                ingredients_zh: '猪里脊300g、鸡蛋1个、面粉、淀粉、番茄酱3勺、白醋2勺、白糖3勺、盐、料酒、白芝麻',
+                ingredients_yue: '豬里脊300g、雞蛋1隻、麵粉、生粉、茄汁3匙羹、白醋2匙羹、白糖3匙羹、鹽、料酒、白芝麻',
+                ingredients_en: '300g pork tenderloin, 1 egg, flour, cornstarch, 3 tbsp ketchup, 2 tbsp white vinegar, 3 tbsp sugar, salt, cooking wine, white sesame seeds',
+                steps_zh: '1.里脊切条，加盐料酒腌制。2.鸡蛋面粉调糊，裹匀肉条。3.油温六成炸至金黄捞出。4.复炸一次更酥脆。5.番茄酱白醋糖调汁，翻炒裹匀，撒芝麻。',
+                steps_yue: '1.里脊切條，加鹽同料酒醃製。2.雞蛋同麵粉開糊，撈勻肉條。3.油溫六成熱炸到金黃撈起。4.翻炸一次更酥脆。5.茄汁白醋糖調汁，翻炒包勻，灑芝麻。',
+                steps_en: '1. Cut tenderloin into strips, marinate with salt and wine. 2. Make batter with egg and flour, coat meat. 3. Deep-fry at medium heat until golden. 4. Double fry for extra crispiness. 5. Mix ketchup, vinegar and sugar, toss meat in sauce, sprinkle sesame.'
+            },
+            {
+                id: 3,
+                category: 'chinese',
+                emoji: '🐔',
+                name_zh: '宫保鸡丁',
+                name_yue: '宮保雞丁',
+                name_en: 'Kung Pao Chicken',
+                ingredients_zh: '鸡胸肉300g、花生米50g、干辣椒、花椒、葱段、姜片、蒜片、酱油、醋、糖、淀粉、料酒',
+                ingredients_yue: '雞胸肉300g、花生米50g、乾辣椒、花椒、蔥段、薑片、蒜片、豉油、醋、糖、生粉、料酒',
+                ingredients_en: '300g chicken breast, 50g peanuts, dried chilies, Sichuan pepper, scallion sections, ginger slices, garlic slices, soy sauce, vinegar, sugar, cornstarch, cooking wine',
+                steps_zh: '1.鸡胸切丁加料酒淀粉腌制。2.花生米小火炒香备用。3.调酱汁：酱油醋糖淀粉水。4.热油爆香辣椒花椒，炒鸡丁至变色。5.加葱姜蒜翻炒，倒入酱汁收汁，拌入花生米。',
+                steps_yue: '1.雞胸切粒加料酒生粉醃製。2.花生米細火炒香備用。3.調醬汁：豉油醋糖生粉水。4.熱油爆香辣椒花椒，炒雞丁至變色。5.加蔥薑蒜翻炒，倒入醬汁收汁，撈入花生米。',
+                steps_en: '1. Dice chicken, marinate with wine and cornstarch. 2. Toast peanuts on low heat. 3. Mix sauce: soy sauce, vinegar, sugar, cornstarch, water. 4. Stir-fry chilies and pepper, add chicken until cooked. 5. Add aromatics, pour sauce, toss with peanuts.'
+            },
+            {
+                id: 4,
+                category: 'chinese',
+                emoji: '🐟',
+                name_zh: '清蒸鲈鱼',
+                name_yue: '清蒸鱸魚',
+                name_en: 'Steamed Sea Bass',
+                ingredients_zh: '鲈鱼1条(约500g)、葱丝、姜丝、蒸鱼豉油、料酒、盐、食用油、红椒丝',
+                ingredients_yue: '鱸魚1條(約500g)、蔥絲、薑絲、蒸魚豉油、料酒、鹽、食用油、紅椒絲',
+                ingredients_en: '1 sea bass (about 500g), shredded scallions, shredded ginger, steamed fish soy sauce, cooking wine, salt, oil, shredded red pepper',
+                steps_zh: '1.鱼洗净划刀，抹盐料酒腌制10分钟。2.鱼身铺姜丝，水开上锅蒸8-10分钟。3.倒掉蒸出的汤汁。4.铺上葱丝红椒丝，淋蒸鱼豉油。5.热油浇上激发香味。',
+                steps_yue: '1.魚洗淨界刀，搽鹽同料酒醃10分鐘。2.魚身鋪薑絲，水滾落鑊蒸8-10分鐘。3.倒走蒸出嚟嘅汁。4.鋪上蔥絲紅椒絲，淋蒸魚豉油。5.滾油淋上去激發香味。',
+                steps_en: '1. Clean fish, score sides, rub with salt and wine. 2. Top with ginger, steam over boiling water 8-10 min. 3. Discard excess liquid. 4. Add scallions and pepper, drizzle soy sauce. 5. Pour hot oil over to release aroma.'
+            },
+            {
+                id: 5,
+                category: 'chinese',
+                emoji: '🥬',
+                name_zh: '蒜蓉炒空心菜',
+                name_yue: '蒜蓉炒通菜',
+                name_en: 'Stir-fried Water Spinach with Garlic',
+                ingredients_zh: '空心菜300g、蒜末大量(5-6瓣)、盐、鸡精、食用油',
+                ingredients_yue: '通菜300g、蒜蓉大量(5-6粒)、鹽、雞粉、食用油',
+                ingredients_en: '300g water spinach, generous minced garlic (5-6 cloves), salt, chicken powder, oil',
+                steps_zh: '1.空心菜洗净切段。2.热油爆香一半蒜末至金黄。3.大火快炒空心菜，加盐鸡精。4.出锅前加剩余生蒜末翻匀。5.保持翠绿，全程大火不超过2分钟。',
+                steps_yue: '1.通菜洗淨切段。2.熱油爆香一半蒜蓉至金黃。3.大火快炒通菜，加鹽同雞粉。4.上碟前加埋剩低嘅生蒜蓉撈勻。5.保持翠綠，全程大火唔超過2分鐘。',
+                steps_en: '1. Wash and cut water spinach. 2. Fry half the garlic in hot oil until golden. 3. Stir-fry spinach on high heat, season. 4. Add remaining raw garlic before serving. 5. Keep it green, total cooking under 2 minutes.'
+            },
+            {
+                id: 6,
+                category: 'chinese',
+                emoji: '🥟',
+                name_zh: '韭菜猪肉饺子',
+                name_yue: '韭菜豬肉餃子',
+                name_en: 'Pork and Chive Dumplings',
+                ingredients_zh: '饺子皮30张、猪肉馅300g、韭菜200g、姜末、酱油、香油、盐、白胡椒粉',
+                ingredients_yue: '餃子皮30塊、豬肉碎300g、韭菜200g、薑蓉、豉油、麻油、鹽、白胡椒粉',
+                ingredients_en: '30 dumpling wrappers, 300g ground pork, 200g chives, minced ginger, soy sauce, sesame oil, salt, white pepper',
+                steps_zh: '1.韭菜切碎拌入肉馅。2.加姜末酱油香油盐胡椒粉搅匀。3.取饺子皮包入馅料捏紧。4.水开下饺子，煮至浮起再煮2分钟。5.蘸醋或辣油食用。',
+                steps_yue: '1.韭菜切碎撈入肉碎。2.加薑蓉豉油麻油鹽胡椒粉攪勻。3.攞餃子皮包入餡料捏實。4.水滾落餃子，煮到浮起再煮2分鐘。5.點醋或者辣油食。',
+                steps_en: '1. Chop chives and mix with pork. 2. Add ginger, soy sauce, sesame oil, salt, pepper. 3. Wrap filling in dumpling skins, seal tightly. 4. Boil until they float, then 2 more minutes. 5. Serve with vinegar or chili oil.'
+            },
+            {
+                id: 7,
+                category: 'chinese',
+                emoji: '🍚',
+                name_zh: '蛋炒饭',
+                name_yue: '蛋炒飯',
+                name_en: 'Egg Fried Rice',
+                ingredients_zh: '隔夜米饭1碗、鸡蛋2个、葱花、盐、食用油、可选火腿丁或虾仁',
+                ingredients_yue: '隔夜飯1碗、雞蛋2隻、蔥花、鹽、食用油、可選火腿粒或者蝦仁',
+                ingredients_en: '1 bowl day-old rice, 2 eggs, chopped scallions, salt, oil, optional diced ham or shrimp',
+                steps_zh: '1.鸡蛋打散，热油炒熟盛出。2.大火热油下米饭快速炒散。3.加入鸡蛋一同翻炒。4.加盐调味，撒葱花。5.炒至米粒分明即可。',
+                steps_yue: '1.雞蛋打散，熱油炒熟盛起。2.大火熱油落米飯快速炒散。3.加返雞蛋一齊翻炒。4.加鹽調味，灑蔥花。5.炒到飯粒粒分明就得。',
+                steps_en: '1. Beat eggs, scramble in hot oil, set aside. 2. Stir-fry rice on high heat until separated. 3. Add eggs back, toss together. 4. Season with salt, add scallions. 5. Fry until each grain is distinct.'
+            },
+            {
+                id: 8,
+                category: 'chinese',
+                emoji: '🦆',
+                name_zh: '北京烤鸭',
+                name_yue: '北京烤鴨',
+                name_en: 'Peking Duck',
+                ingredients_zh: '整鸭1只、麦芽糖、白醋、甜面酱、黄瓜条、葱丝、薄饼',
+                ingredients_yue: '全鴨1隻、麥芽糖、白醋、甜麵醬、青瓜條、蔥絲、薄餅',
+                ingredients_en: '1 whole duck, maltose, white vinegar, sweet bean sauce, cucumber strips, scallion shreds, thin pancakes',
+                steps_zh: '1.鸭子处理干净，吹气使皮肉分离。2.烫皮后刷麦芽糖醋水，风干12小时。3.烤箱200°C烤40-50分钟至皮酥。4.片下鸭皮鸭肉。5.薄饼抹甜面酱，放鸭肉黄瓜葱丝卷起。',
+                steps_yue: '1.鴨處理乾淨，吹氣令皮肉分離。2.淥皮之後搽麥芽糖醋水，風乾12個鐘。3.焗爐200°C焗40-50分鐘至皮脆。4.片出鴨皮鴨肉。5.薄餅搽甜麵醬，放鴨肉青瓜蔥絲捲起。',
+                steps_en: '1. Clean duck, inflate to separate skin. 2. Blanch skin, brush with maltose-vinegar mix, air-dry 12h. 3. Roast at 200°C for 40-50 min until crispy. 4. Carve skin and meat. 5. Spread sauce on pancake, add duck, cucumber, scallions, roll up.'
+            },
+            {
+                id: 9,
+                category: 'chinese',
+                emoji: '🍲',
+                name_zh: '白切鸡',
+                name_yue: '白切雞',
+                name_en: 'White Cut Chicken',
+                ingredients_zh: '三黄鸡1只(约1.5kg)、姜、葱、沙姜、盐、花生油',
+                ingredients_yue: '三黃雞1隻(約1.5kg)、薑、蔥、沙薑、鹽、花生油',
+                ingredients_en: '1 whole chicken (about 1.5kg), ginger, scallions, sand ginger, salt, peanut oil',
+                steps_zh: '1.鸡洗净，大锅水烧开。2.提着鸡浸入沸水，重复三次"三提三放"。3.转小火浸煮20-25分钟至熟。4.捞出过冰水使皮爽脆。5.斩件配姜葱油蘸食。',
+                steps_yue: '1.雞洗乾淨，大煲水煲滾。2.拎住雞浸入滾水，重複三次「三提三放」。3.轉細火浸煮20-25分鐘至熟。4.撈起過冰水令皮爽脆。5.斬件配薑蔥油點嚟食。',
+                steps_en: '1. Clean chicken, bring large pot of water to boil. 2. Dip chicken in boiling water 3 times. 3. Simmer on low heat 20-25 min. 4. Plunge into ice water for crispy skin. 5. Chop and serve with ginger-scallion oil.'
+            },
+            {
+                id: 10,
+                category: 'chinese',
+                emoji: '🍜',
+                name_zh: '红烧牛肉面',
+                name_yue: '紅燒牛肉麵',
+                name_en: 'Braised Beef Noodle Soup',
+                ingredients_zh: '牛腱子500g、面条、胡萝卜、白萝卜、八角、桂皮、香叶、酱油、豆瓣酱、冰糖、葱姜',
+                ingredients_yue: '牛腱500g、麵條、甘筍、白蘿蔔、八角、桂皮、香葉、豉油、豆瓣醬、冰糖、蔥薑',
+                ingredients_en: '500g beef shank, noodles, carrots, daikon radish, star anise, cinnamon, bay leaves, soy sauce, doubanjiang, rock sugar, scallions, ginger',
+                steps_zh: '1.牛肉切块焯水。2.热油炒香豆瓣酱葱姜。3.加牛肉翻炒，加酱油冰糖香料。4.加水没过牛肉，炖1.5小时。5.加入萝卜再炖30分钟。6.煮面浇上牛肉汤。',
+                steps_yue: '1.牛肉切件汆水。2.熱油炒香豆瓣醬蔥薑。3.加牛肉翻炒，加豉油冰糖香料。4.加水蓋過牛肉，燉1.5小時。5.加入蘿蔔再燉30分鐘。6.煮麵淋上牛肉湯。',
+                steps_en: '1. Cut beef into chunks, blanch. 2. Stir-fry doubanjiang with aromatics. 3. Add beef, soy sauce, rock sugar, spices. 4. Cover with water, braise 1.5h. 5. Add radishes, braise 30 min more. 6. Cook noodles, ladle beef soup over.'
+            },
+            {
+                id: 11,
+                category: 'chinese',
+                emoji: '🥘',
+                name_zh: '煲仔饭',
+                name_yue: '煲仔飯',
+                name_en: 'Claypot Rice',
+                ingredients_zh: '大米1杯、腊肠1根、腊肉50g、青菜、酱油、蚝油、糖、油',
+                ingredients_yue: '米1杯、臘腸1條、臘肉50g、青菜、豉油、蠔油、糖、油',
+                ingredients_en: '1 cup rice, 1 Chinese sausage, 50g cured pork belly, bok choy, soy sauce, oyster sauce, sugar, oil',
+                steps_zh: '1.米浸泡30分钟。2.砂锅抹油，加米和水(1:1.2)。3.大火煮开转小火，放腊肠腊肉。4.小火焖15分钟，沿锅边淋油。5.打入鸡蛋，放焯好的青菜，淋酱汁。',
+                steps_yue: '1.米浸30分鐘。2.砂鍋搽油，加米同水(1:1.2)。3.大火煮滾轉細火，放臘腸臘肉。4.細火燜15分鐘，沿鑊邊淋油。5.打隻雞蛋，放烚好嘅青菜，淋醬汁。',
+                steps_en: '1. Soak rice 30 min. 2. Oil claypot, add rice and water (1:1.2). 3. Bring to boil, reduce heat, add sausages. 4. Simmer 15 min, drizzle oil around edge. 5. Crack an egg, add blanched greens, drizzle sauce.'
+            },
+            {
+                id: 12,
+                category: 'chinese',
+                emoji: '🥩',
+                name_zh: '回锅肉',
+                name_yue: '回鍋肉',
+                name_en: 'Twice-Cooked Pork',
+                ingredients_zh: '五花肉300g、蒜苗(或青椒)、豆瓣酱、豆豉、姜片、料酒、酱油、白糖',
+                ingredients_yue: '五花腩300g、蒜苗(或青椒)、豆瓣醬、豆豉、薑片、料酒、豉油、白糖',
+                ingredients_en: '300g pork belly, garlic sprouts (or green peppers), doubanjiang, fermented black beans, ginger slices, cooking wine, soy sauce, sugar',
+                steps_zh: '1.五花肉整块煮至七八分熟，切薄片。2.热锅少油煸炒肉片至卷曲出油。3.加豆瓣酱豆豉炒出红油。4.加姜片蒜苗翻炒。5.加酱油糖调味出锅。',
+                steps_yue: '1.五花腩原塊煮到七八成熟，切薄片。2.熱鑊少油爆炒肉片至捲曲出油。3.加豆瓣醬豆豉炒出紅油。4.加薑片蒜苗翻炒。5.加豉油糖調味上碟。',
+                steps_en: '1. Boil pork belly until 70-80% cooked, slice thin. 2. Pan-fry slices until curled and oil releases. 3. Add doubanjiang and black beans. 4. Add ginger and garlic sprouts. 5. Season with soy sauce and sugar.'
+            },
+            {
+                id: 13,
+                category: 'chinese',
+                emoji: '🦐',
+                name_zh: '油焖大虾',
+                name_yue: '油燜大蝦',
+                name_en: 'Braised Prawns in Oil',
+                ingredients_zh: '大虾500g、葱姜蒜、番茄酱、料酒、生抽、白糖、盐',
+                ingredients_yue: '大蝦500g、蔥薑蒜、茄汁、料酒、生抽、白糖、鹽',
+                ingredients_en: '500g large prawns, scallions, ginger, garlic, ketchup, cooking wine, soy sauce, sugar, salt',
+                steps_zh: '1.虾去虾线洗净。2.热油煎虾至两面变红。3.加葱姜蒜炒香。4.加番茄酱料酒生抽糖，加水焖3分钟。5.收汁至浓稠，撒葱花。',
+                steps_yue: '1.蝦去腸洗乾淨。2.熱油煎蝦至兩面變紅。3.加蔥薑蒜炒香。4.加茄汁料酒生抽糖，加水燜3分鐘。5.收汁至濃稠，灑蔥花。',
+                steps_en: '1. Devein and clean prawns. 2. Pan-fry until both sides turn red. 3. Add aromatics. 4. Add ketchup, wine, soy sauce, sugar, water, braise 3 min. 5. Reduce sauce, garnish with scallions.'
+            },
+            {
+                id: 14,
+                category: 'chinese',
+                emoji: '🥒',
+                name_zh: '拍黄瓜',
+                name_yue: '拍青瓜',
+                name_en: 'Smashed Cucumber Salad',
+                ingredients_zh: '黄瓜2根、蒜末、醋、生抽、香油、盐、辣椒油、芝麻',
+                ingredients_yue: '青瓜2條、蒜蓉、醋、生抽、麻油、鹽、辣椒油、芝麻',
+                ingredients_en: '2 cucumbers, minced garlic, vinegar, soy sauce, sesame oil, salt, chili oil, sesame seeds',
+                steps_zh: '1.黄瓜洗净用刀拍裂，切段。2.加盐腌制10分钟，沥水。3.调汁：蒜末醋生抽香油辣椒油。4.拌匀撒芝麻，冷藏更佳。',
+                steps_yue: '1.青瓜洗淨用刀拍裂，切段。2.加鹽醃10分鐘，瀝水。3.調汁：蒜蓉醋生抽麻油辣椒油。4.撈勻灑芝麻，雪凍仲好食。',
+                steps_en: '1. Smash cucumbers with a knife, cut into pieces. 2. Salt for 10 min, drain. 3. Mix dressing: garlic, vinegar, soy sauce, sesame oil, chili oil. 4. Toss and sprinkle sesame. Best served chilled.'
+            },
+            {
+                id: 15,
+                category: 'chinese',
+                emoji: '🍗',
+                name_zh: '盐焗鸡',
+                name_yue: '鹽焗雞',
+                name_en: 'Salt-Baked Chicken',
+                ingredients_zh: '三黄鸡1只、粗盐2kg、沙姜粉、盐、黄栀子(可选)、油纸',
+                ingredients_yue: '三黃雞1隻、粗鹽2kg、沙薑粉、鹽、黃梔子(可選)、油紙',
+                ingredients_en: '1 whole chicken, 2kg coarse salt, sand ginger powder, salt, gardenia pods (optional), parchment paper',
+                steps_zh: '1.鸡洗净抹沙姜粉和盐腌制2小时。2.用油纸包裹整只鸡。3.粗盐炒至滚热。4.将鸡埋入热盐中，小火焗40分钟。5.取出斩件。',
+                steps_yue: '1.雞洗淨搽沙薑粉同鹽醃2個鐘。2.用油紙包住成隻雞。3.粗鹽炒到好熱。4.將雞埋入熱鹽入面，細火焗40分鐘。5.拎出嚟斬件。',
+                steps_en: '1. Rub chicken with sand ginger powder and salt, marinate 2h. 2. Wrap in parchment paper. 3. Heat coarse salt until very hot. 4. Bury chicken in hot salt, bake on low heat 40 min. 5. Unwrap and chop.'
+            },
+            {
+                id: 16,
+                category: 'chinese',
+                emoji: '🥟',
+                name_zh: '小笼包',
+                name_yue: '小籠包',
+                name_en: 'Soup Dumplings (Xiaolongbao)',
+                ingredients_zh: '面粉200g、猪肉馅250g、猪皮冻150g、姜末、酱油、料酒、盐、糖',
+                ingredients_yue: '麵粉200g、豬肉碎250g、豬皮凍150g、薑蓉、豉油、料酒、鹽、糖',
+                ingredients_en: '200g flour, 250g ground pork, 150g pork skin jelly, minced ginger, soy sauce, cooking wine, salt, sugar',
+                steps_zh: '1.面粉加水和成面团醒发。2.肉馅加调料拌匀，拌入切碎的皮冻。3.擀皮包入馅料，捏18个褶。4.蒸笼垫布，大火蒸8分钟。5.小心咬开先喝汤。',
+                steps_yue: '1.麵粉加水搓成麵糰醒發。2.肉碎加調味料攪勻，撈入切碎嘅皮凍。3.擀皮包入餡料，捏18個褶。4.蒸籠墊布，大火蒸8分鐘。5.小心咬開先飲湯。',
+                steps_en: '1. Make dough with flour and water, rest. 2. Mix pork with seasonings, fold in chopped jelly. 3. Roll wrappers, fill and pleat 18 folds. 4. Steam on high heat 8 min. 5. Bite carefully, sip the soup first.'
+            },
+            {
+                id: 17,
+                category: 'chinese',
+                emoji: '🥬',
+                name_zh: '干煸四季豆',
+                name_yue: '乾煸四季豆',
+                name_en: 'Dry-Fried Green Beans',
+                ingredients_zh: '四季豆300g、猪肉末50g、干辣椒、花椒、蒜末、酱油、盐',
+                ingredients_yue: '四季豆300g、豬肉碎50g、乾辣椒、花椒、蒜蓉、豉油、鹽',
+                ingredients_en: '300g green beans, 50g minced pork, dried chilies, Sichuan pepper, minced garlic, soy sauce, salt',
+                steps_zh: '1.四季豆去筋掰段。2.中火干煸四季豆至表皮起皱。3.另起锅炒肉末至酥香。4.加入辣椒花椒蒜末爆香。5.倒回四季豆翻炒调味。',
+                steps_yue: '1.四季豆去筋搣段。2.中火乾煸四季豆至表皮起皺。3.另起鑊炒肉碎至酥香。4.加入辣椒花椒蒜蓉爆香。5.倒返四季豆翻炒調味。',
+                steps_en: '1. Trim and snap green beans. 2. Dry-fry on medium heat until wrinkled. 3. In another pan, fry pork until crispy. 4. Add chilies, pepper, garlic. 5. Return beans, toss and season.'
+            },
+            {
+                id: 18,
+                category: 'chinese',
+                emoji: '🥘',
+                name_zh: '酸菜鱼',
+                name_yue: '酸菜魚',
+                name_en: 'Sauerkraut Fish',
+                ingredients_zh: '草鱼片300g、酸菜200g、干辣椒、花椒、姜蒜、蛋清、淀粉、盐、白醋',
+                ingredients_yue: '鯇魚片300g、酸菜200g、乾辣椒、花椒、薑蒜、蛋白、生粉、鹽、白醋',
+                ingredients_en: '300g grass carp fillets, 200g pickled mustard greens, dried chilies, Sichuan pepper, ginger, garlic, egg white, cornstarch, salt, white vinegar',
+                steps_zh: '1.鱼片加蛋清淀粉腌制。2.酸菜切丝炒干水分。3.爆香姜蒜，加酸菜和水煮开。4.滑入鱼片煮至变白。5.撒辣椒花椒，浇热油。',
+                steps_yue: '1.魚片加蛋白生粉醃製。2.酸菜切絲炒乾水分。3.爆香薑蒜，加酸菜同水煮滾。4.滑入魚片煮到變白。5.灑辣椒花椒，淋滾油。',
+                steps_en: '1. Marinate fish with egg white and cornstarch. 2. Stir-fry pickled greens until dry. 3. Sauté aromatics, add greens and water, boil. 4. Slide in fish, cook until white. 5. Top with chilies and pepper, pour hot oil over.'
+            },
+            {
+                id: 19,
+                category: 'chinese',
+                emoji: '🍖',
+                name_zh: '叉烧',
+                name_yue: '叉燒',
+                name_en: 'Char Siu (BBQ Pork)',
+                ingredients_zh: '猪梅花肉500g、叉烧酱3勺、蚝油、蜂蜜、生抽、老抽、蒜末、五香粉',
+                ingredients_yue: '豬梅花肉500g、叉燒醬3匙羹、蠔油、蜜糖、生抽、老抽、蒜蓉、五香粉',
+                ingredients_en: '500g pork shoulder, 3 tbsp char siu sauce, oyster sauce, honey, soy sauce, dark soy sauce, minced garlic, five-spice powder',
+                steps_zh: '1.肉切长条，用所有调料腌制过夜。2.烤箱200°C烤20分钟。3.取出刷蜂蜜。4.翻面再烤15-20分钟。5.切片淋上烤出的汁。',
+                steps_yue: '1.肉切長條，用所有調味料醃過夜。2.焗爐200°C焗20分鐘。3.拎出嚟搽蜜糖。4.反轉再焗15-20分鐘。5.切片淋上焗出嘅汁。',
+                steps_en: '1. Cut pork into strips, marinate overnight. 2. Roast at 200°C for 20 min. 3. Brush with honey. 4. Flip, roast another 15-20 min. 5. Slice and drizzle with pan juices.'
+            },
+            {
+                id: 20,
+                category: 'chinese',
+                emoji: '🍲',
+                name_zh: '皮蛋瘦肉粥',
+                name_yue: '皮蛋瘦肉粥',
+                name_en: 'Century Egg and Pork Congee',
+                ingredients_zh: '大米半杯、皮蛋2个、瘦肉100g、姜丝、葱花、盐、白胡椒粉',
+                ingredients_yue: '米半杯、皮蛋2隻、瘦肉100g、薑絲、蔥花、鹽、白胡椒粉',
+                ingredients_en: '1/2 cup rice, 2 century eggs, 100g lean pork, shredded ginger, chopped scallions, salt, white pepper',
+                steps_zh: '1.大米浸泡后加水煮沸转小火熬40分钟。2.瘦肉切丝腌制，皮蛋切丁。3.粥煮绵后加入肉丝和皮蛋。4.再煮10分钟，加盐胡椒粉。5.撒姜丝葱花。',
+                steps_yue: '1.米浸完加水煮滾轉細火熬40分鐘。2.瘦肉切絲醃製，皮蛋切粒。3.粥煮綿之後加入肉絲同皮蛋。4.再煮10分鐘，加鹽同胡椒粉。5.灑薑絲蔥花。',
+                steps_en: '1. Soak rice, boil then simmer 40 min. 2. Slice pork, marinate; dice century eggs. 3. Add pork and eggs to congee. 4. Cook 10 more min, season. 5. Top with ginger and scallions.'
+            },
+            {
+                id: 21,
+                category: 'chinese',
+                emoji: '🍆',
+                name_zh: '鱼香茄子',
+                name_yue: '魚香茄子',
+                name_en: 'Fish-Fragrant Eggplant',
+                ingredients_zh: '茄子2根、猪肉末80g、蒜末、姜末、葱花、豆瓣酱、酱油、醋、糖、淀粉',
+                ingredients_yue: '茄子2條、豬肉碎80g、蒜蓉、薑蓉、蔥花、豆瓣醬、豉油、醋、糖、生粉',
+                ingredients_en: '2 eggplants, 80g minced pork, minced garlic, ginger, scallions, doubanjiang, soy sauce, vinegar, sugar, cornstarch',
+                steps_zh: '1.茄子切条，油炸或煎软备用。2.炒肉末至变色，加豆瓣酱。3.加蒜姜炒香，调鱼香汁(酱油醋糖)。4.放入茄子翻炒均匀。5.勾芡撒葱花。',
+                steps_yue: '1.茄子切條，油炸或者煎軟備用。2.炒肉碎至變色，加豆瓣醬。3.加蒜蓉薑蓉炒香，調魚香汁(豉油醋糖)。4.放入茄子翻炒均勻。5.打芡灑蔥花。',
+                steps_en: '1. Cut eggplant into strips, fry until soft. 2. Brown pork, add doubanjiang. 3. Add garlic and ginger, mix fish-fragrant sauce. 4. Add eggplant, toss well. 5. Thicken with slurry, top with scallions.'
+            },
+            {
+                id: 22,
+                category: 'chinese',
+                emoji: '🐔',
+                name_zh: '辣子鸡',
+                name_yue: '辣子雞',
+                name_en: 'Chongqing Spicy Chicken',
+                ingredients_zh: '鸡腿肉400g、干辣椒一大把、花椒、蒜片、姜片、料酒、酱油、盐、白芝麻',
+                ingredients_yue: '雞髀肉400g、乾辣椒一大把、花椒、蒜片、薑片、料酒、豉油、鹽、白芝麻',
+                ingredients_en: '400g chicken thighs, a large handful of dried chilies, Sichuan pepper, sliced garlic, sliced ginger, cooking wine, soy sauce, salt, white sesame',
+                steps_zh: '1.鸡肉切小块加料酒酱油腌制。2.油温七成炸鸡块至金黄。3.留底油爆香辣椒花椒。4.加入鸡块蒜姜翻炒。5.撒芝麻出锅。',
+                steps_yue: '1.雞肉切細件加料酒豉油醃製。2.油溫七成熱炸雞件至金黃。3.留底油爆香辣椒花椒。4.加入雞件蒜薑翻炒。5.灑芝麻上碟。',
+                steps_en: '1. Cut chicken into small pieces, marinate. 2. Deep-fry at 70% heat until golden. 3. In reserved oil, fry chilies and pepper. 4. Add chicken, garlic, ginger, toss. 5. Sprinkle sesame.'
+            },
+            {
+                id: 23,
+                category: 'chinese',
+                emoji: '🥟',
+                name_zh: '虾饺',
+                name_yue: '蝦餃',
+                name_en: 'Har Gow (Shrimp Dumplings)',
+                ingredients_zh: '澄面100g、生粉50g、虾仁200g、肥肉丁30g、竹笋丁、盐、糖、香油、开水',
+                ingredients_yue: '澄麵100g、生粉50g、蝦仁200g、肥肉粒30g、竹筍粒、鹽、糖、麻油、滾水',
+                ingredients_en: '100g wheat starch, 50g tapioca starch, 200g shrimp, 30g diced pork fat, diced bamboo shoots, salt, sugar, sesame oil, boiling water',
+                steps_zh: '1.澄面生粉混合，用滚水烫熟揉成面团。2.虾仁拍成泥，加肥肉笋丁调料做馅。3.面团擀成薄圆皮。4.包入馅料捏成饺子形。5.蒸笼大火蒸6分钟。',
+                steps_yue: '1.澄麵生粉撈勻，用滾水燙熟搓成麵糰。2.蝦仁拍成泥，加肥肉筍粒調味料做餡。3.麵糰擀成薄圓皮。4.包入餡料捏成餃子形。5.蒸籠大火蒸6分鐘。',
+                steps_en: '1. Mix starches, cook with boiling water to form dough. 2. Chop shrimp into paste, mix with fat, bamboo, seasonings. 3. Roll dough into thin rounds. 4. Fill and shape into dumplings. 5. Steam on high heat 6 min.'
+            },
+            {
+                id: 24,
+                category: 'chinese',
+                emoji: '🍲',
+                name_zh: '佛跳墙',
+                name_yue: '佛跳牆',
+                name_en: "Buddha Jumps Over the Wall",
+                ingredients_zh: '鲍鱼、海参、鱼翅(可用素翅)、花胶、干贝、鸡、排骨、花菇、火腿、黄酒',
+                ingredients_yue: '鮑魚、海參、魚翅(可用素翅)、花膠、乾貝、雞、排骨、花菇、火腿、黃酒',
+                ingredients_en: 'Abalone, sea cucumber, shark fin (or vegetarian alternative), fish maw, dried scallops, chicken, pork ribs, shiitake mushrooms, ham, Shaoxing wine',
+                steps_zh: '1.所有干货提前泡发。2.鸡和排骨焯水。3.将所有材料分层放入炖盅。4.加入黄酒和清水。5.密封隔水炖3-4小时。',
+                steps_yue: '1.所有乾貨提早浸發。2.雞同排骨汆水。3.將所有材料分層放入燉盅。4.加入黃酒同清水。5.密封隔水燉3-4小時。',
+                steps_en: '1. Soak all dried ingredients in advance. 2. Blanch chicken and ribs. 3. Layer all ingredients in a clay pot. 4. Add wine and water. 5. Seal and double-steam for 3-4 hours.'
+            },
+            {
+                id: 25,
+                category: 'chinese',
+                emoji: '🥘',
+                name_zh: '毛血旺',
+                name_yue: '毛血旺',
+                name_en: 'Maoxuewang (Spicy Blood Curd Stew)',
+                ingredients_zh: '鸭血、毛肚、午餐肉、豆芽、火锅底料、干辣椒、花椒、蒜末',
+                ingredients_yue: '鴨血、毛肚、午餐肉、芽菜、火鍋底料、乾辣椒、花椒、蒜蓉',
+                ingredients_en: 'Duck blood curd, tripe, luncheon meat, bean sprouts, hotpot base, dried chilies, Sichuan pepper, minced garlic',
+                steps_zh: '1.豆芽焯水铺碗底。2.火锅底料炒香加水煮开。3.依次放入鸭血毛肚午餐肉煮熟。4.倒入碗中。5.撒辣椒花椒蒜末，浇热油。',
+                steps_yue: '1.芽菜汆水鋪碗底。2.火鍋底料炒香加水煮滾。3.依次放入鴨血毛肚午餐肉煮熟。4.倒入碗入面。5.灑辣椒花椒蒜蓉，淋滾油。',
+                steps_en: '1. Blanch bean sprouts, place in bowl. 2. Stir-fry hotpot base, add water, boil. 3. Add blood curd, tripe, luncheon meat, cook. 4. Pour into bowl. 5. Top with chilies, pepper, garlic, pour hot oil over.'
+            },
+            {
+                id: 26,
+                category: 'chinese',
+                emoji: '🦀',
+                name_zh: '避风塘炒蟹',
+                name_yue: '避風塘炒蟹',
+                name_en: 'Typhoon Shelter Crab',
+                ingredients_zh: '螃蟹2只、蒜末大量、面包糠、干辣椒、豆豉、盐、糖、料酒',
+                ingredients_yue: '蟹2隻、蒜蓉大量、麵包糠、乾辣椒、豆豉、鹽、糖、料酒',
+                ingredients_en: '2 crabs, generous minced garlic, breadcrumbs, dried chilies, fermented black beans, salt, sugar, cooking wine',
+                steps_zh: '1.蟹处理干净斩块。2.蟹块裹薄淀粉油炸至红。3.大量蒜末炸至金黄成蒜酥。4.炒香辣椒豆豉，加蟹块和面包糠。5.翻炒均匀加盐糖调味。',
+                steps_yue: '1.蟹處理乾淨斬件。2.蟹件撲薄生粉炸到紅色。3.大量蒜蓉炸到金黃做蒜酥。4.炒香辣椒豆豉，加蟹件同麵包糠。5.翻炒均勻加鹽糖調味。',
+                steps_en: '1. Clean and chop crabs. 2. Dust with cornstarch, deep-fry until red. 3. Fry lots of garlic until golden. 4. Stir-fry chilies and black beans, add crab and breadcrumbs. 5. Toss well, season.'
+            },
+            {
+                id: 27,
+                category: 'chinese',
+                emoji: '🥢',
+                name_zh: '炒河粉',
+                name_yue: '炒河粉',
+                name_en: 'Stir-fried Rice Noodles (Beef Chow Fun)',
+                ingredients_zh: '河粉300g、牛肉片100g、豆芽、葱段、酱油、老抽、蚝油、糖',
+                ingredients_yue: '河粉300g、牛肉片100g、芽菜、蔥段、豉油、老抽、蠔油、糖',
+                ingredients_en: '300g wide rice noodles, 100g sliced beef, bean sprouts, scallion sections, soy sauce, dark soy sauce, oyster sauce, sugar',
+                steps_zh: '1.牛肉片腌制滑油备用。2.大火热油炒河粉至微微焦香。3.加牛肉豆芽翻炒。4.加调料快速翻炒均匀。5.撒葱段出锅。',
+                steps_yue: '1.牛肉片醃製拉油備用。2.大火熱油炒河粉至微微焦香。3.加牛肉芽菜翻炒。4.加調味料快速翻炒均勻。5.灑蔥段上碟。',
+                steps_en: '1. Marinate and sear beef slices. 2. Stir-fry noodles on high heat until slightly charred. 3. Add beef and sprouts. 4. Add seasonings, toss quickly. 5. Add scallions, serve.'
+            },
+            {
+                id: 28,
+                category: 'chinese',
+                emoji: '🥟',
+                name_zh: '红油抄手',
+                name_yue: '紅油抄手',
+                name_en: 'Red Oil Wontons',
+                ingredients_zh: '馄饨皮、猪肉馅200g、辣椒油、蒜泥、酱油、醋、糖、花椒粉、葱花',
+                ingredients_yue: '雲吞皮、豬肉碎200g、辣椒油、蒜蓉、豉油、醋、糖、花椒粉、蔥花',
+                ingredients_en: 'Wonton wrappers, 200g minced pork, chili oil, garlic paste, soy sauce, vinegar, sugar, Sichuan pepper powder, chopped scallions',
+                steps_zh: '1.猪肉馅调味包成馄饨。2.水开煮馄饨至浮起。3.调红油汁：辣椒油蒜泥酱油醋糖花椒粉。4.馄饨捞出浇上红油汁。5.撒葱花。',
+                steps_yue: '1.豬肉碎調味包成雲吞。2.水滾煮雲吞至浮起。3.調紅油汁：辣椒油蒜蓉豉油醋糖花椒粉。4.雲吞撈起淋上紅油汁。5.灑蔥花。',
+                steps_en: '1. Season pork, wrap into wontons. 2. Boil until they float. 3. Mix sauce: chili oil, garlic, soy sauce, vinegar, sugar, pepper. 4. Drain wontons, pour sauce over. 5. Garnish with scallions.'
+            },
+            {
+                id: 29,
+                category: 'chinese',
+                emoji: '🫕',
+                name_zh: '酸辣汤',
+                name_yue: '酸辣湯',
+                name_en: 'Hot and Sour Soup',
+                ingredients_zh: '豆腐、木耳、香菇、鸡蛋、醋、白胡椒粉、酱油、淀粉、香油',
+                ingredients_yue: '豆腐、木耳、冬菇、雞蛋、醋、白胡椒粉、豉油、生粉、麻油',
+                ingredients_en: 'Tofu, wood ear mushrooms, shiitake, eggs, vinegar, white pepper, soy sauce, cornstarch, sesame oil',
+                steps_zh: '1.豆腐木耳香菇切丝。2.水或高汤煮开，放入材料。3.加酱油醋白胡椒粉调味。4.淀粉勾芡，淋入蛋液。5.出锅淋香油。',
+                steps_yue: '1.豆腐木耳冬菇切絲。2.水或者上湯煮滾，放入材料。3.加豉油醋白胡椒粉調味。4.生粉打芡，淋入蛋漿。5.上碟淋麻油。',
+                steps_en: '1. Shred tofu, mushrooms. 2. Bring broth to boil, add ingredients. 3. Season with soy sauce, vinegar, pepper. 4. Thicken with cornstarch, drizzle in beaten eggs. 5. Finish with sesame oil.'
+            },
+            {
+                id: 30,
+                category: 'chinese',
+                emoji: '🐟',
+                name_zh: '松鼠鳜鱼',
+                name_yue: '松鼠鱖魚',
+                name_en: 'Squirrel-Shaped Mandarin Fish',
+                ingredients_zh: '鳜鱼1条、番茄酱、白醋、糖、淀粉、松子仁、青豆',
+                ingredients_yue: '鱖魚1條、茄汁、白醋、糖、生粉、松子仁、青豆',
+                ingredients_en: '1 mandarin fish, ketchup, white vinegar, sugar, cornstarch, pine nuts, green peas',
+                steps_zh: '1.鱼去骨，鱼肉切花刀不切破皮。2.裹满淀粉，油炸至定型金黄。3.调糖醋汁：番茄酱白醋糖。4.汁浇在鱼上。5.撒松子青豆装饰。',
+                steps_yue: '1.魚去骨，魚肉切花刀唔切破皮。2.撲滿生粉，油炸至定型金黃。3.調糖醋汁：茄汁白醋糖。4.汁淋喺魚上面。5.灑松子青豆裝飾。',
+                steps_en: '1. Debone fish, score flesh without cutting skin. 2. Coat with cornstarch, deep-fry until shaped and golden. 3. Make sweet-sour sauce with ketchup, vinegar, sugar. 4. Pour sauce over fish. 5. Garnish with pine nuts and peas.'
+            },
+            {
+                id: 31,
+                category: 'chinese',
+                emoji: '🥘',
+                name_zh: '黄焖鸡',
+                name_yue: '黃燜雞',
+                name_en: 'Yellow Braised Chicken',
+                ingredients_zh: '鸡腿块400g、土豆、香菇、青椒、姜片、酱油、蚝油、冰糖、料酒',
+                ingredients_yue: '雞髀件400g、薯仔、冬菇、青椒、薑片、豉油、蠔油、冰糖、料酒',
+                ingredients_en: '400g chicken thigh pieces, potatoes, shiitake mushrooms, green peppers, ginger slices, soy sauce, oyster sauce, rock sugar, cooking wine',
+                steps_zh: '1.鸡块焯水。2.炒糖色：冰糖小火融化至焦糖色。3.下鸡块翻炒上色。4.加姜片香菇土豆，加水焖20分钟。5.加青椒收汁。',
+                steps_yue: '1.雞件汆水。2.炒糖色：冰糖細火融化至焦糖色。3.落雞件翻炒上色。4.加薑片冬菇薯仔，加水燜20分鐘。5.加青椒收汁。',
+                steps_en: '1. Blanch chicken. 2. Caramelize rock sugar on low heat. 3. Add chicken, coat with caramel. 4. Add ginger, mushrooms, potatoes, water, braise 20 min. 5. Add peppers, reduce sauce.'
+            },
+            {
+                id: 32,
+                category: 'chinese',
+                emoji: '🥒',
+                name_zh: '蚂蚁上树',
+                name_yue: '螞蟻上樹',
+                name_en: 'Ants Climbing a Tree',
+                ingredients_zh: '粉丝100g、猪肉末80g、豆瓣酱、姜蒜末、酱油、葱花、高汤',
+                ingredients_yue: '粉絲100g、豬肉碎80g、豆瓣醬、薑蒜蓉、豉油、蔥花、上湯',
+                ingredients_en: '100g vermicelli, 80g minced pork, doubanjiang, minced garlic and ginger, soy sauce, chopped scallions, broth',
+                steps_zh: '1.粉丝温水泡软。2.炒肉末至酥，加豆瓣酱。3.加姜蒜炒香，加高汤。4.放入粉丝吸饱汤汁。5.撒葱花出锅。',
+                steps_yue: '1.粉絲暖水浸軟。2.炒肉碎至酥，加豆瓣醬。3.加薑蒜炒香，加上湯。4.放入粉絲吸飽湯汁。5.灑蔥花上碟。',
+                steps_en: '1. Soak vermicelli in warm water. 2. Fry pork until crispy, add doubanjiang. 3. Add ginger and garlic, pour in broth. 4. Add noodles, let them absorb liquid. 5. Top with scallions.'
+            },
+            {
+                id: 33,
+                category: 'chinese',
+                emoji: '🍖',
+                name_zh: '东坡肉',
+                name_yue: '東坡肉',
+                name_en: "Dongpo Pork",
+                ingredients_zh: '五花肉500g、酱油、老抽、冰糖、料酒(黄酒)、葱、姜',
+                ingredients_yue: '五花腩500g、豉油、老抽、冰糖、料酒(黃酒)、蔥、薑',
+                ingredients_en: '500g pork belly, soy sauce, dark soy sauce, rock sugar, Shaoxing wine, scallions, ginger',
+                steps_zh: '1.五花肉焯水切方块。2.砂锅底铺葱姜。3.肉皮朝下码放。4.加酱油老抽冰糖黄酒，小火炖2小时。5.翻面再炖30分钟至软烂。',
+                steps_yue: '1.五花腩汆水切方塊。2.砂鍋底鋪蔥薑。3.肉皮向下排放。4.加豉油老抽冰糖黃酒，細火燉2小時。5.反轉再燉30分鐘至軟腍。',
+                steps_en: '1. Blanch pork belly, cut into cubes. 2. Line pot with scallions and ginger. 3. Place pork skin-side down. 4. Add seasonings and wine, braise on low 2h. 5. Flip, braise another 30 min until tender.'
+            },
+            {
+                id: 34,
+                category: 'chinese',
+                emoji: '🥟',
+                name_zh: '烧卖',
+                name_yue: '燒賣',
+                name_en: 'Siu Mai (Pork and Shrimp Dumplings)',
+                ingredients_zh: '烧卖皮、猪肉馅200g、虾仁100g、香菇、马蹄、盐、糖、香油、淀粉',
+                ingredients_yue: '燒賣皮、豬肉碎200g、蝦仁100g、冬菇、馬蹄、鹽、糖、麻油、生粉',
+                ingredients_en: 'Siu mai wrappers, 200g minced pork, 100g shrimp, shiitake mushrooms, water chestnuts, salt, sugar, sesame oil, cornstarch',
+                steps_zh: '1.虾仁拍泥，香菇马蹄切碎。2.所有材料混合搅上劲。3.取烧卖皮包入馅料，虎口收拢。4.顶部放一粒虾仁点缀。5.大火蒸8分钟。',
+                steps_yue: '1.蝦仁拍泥，冬菇馬蹄切碎。2.所有材料混合攪到起膠。3.攞燒賣皮包入餡料，虎口收攏。4.頂部放一粒蝦仁點綴。5.大火蒸8分鐘。',
+                steps_en: '1. Chop shrimp into paste, dice mushrooms and water chestnuts. 2. Mix all ingredients until sticky. 3. Wrap filling in skins, gather at top. 4. Top with a shrimp piece. 5. Steam on high 8 min.'
+            },
+            {
+                id: 35,
+                category: 'chinese',
+                emoji: '🦐',
+                name_zh: '蒜蓉粉丝蒸虾',
+                name_yue: '蒜蓉粉絲蒸蝦',
+                name_en: 'Steamed Shrimp with Garlic and Vermicelli',
+                ingredients_zh: '大虾10只、粉丝1把、蒜末大量、葱花、蒸鱼豉油、热油',
+                ingredients_yue: '大蝦10隻、粉絲1扎、蒜蓉大量、蔥花、蒸魚豉油、滾油',
+                ingredients_en: '10 large shrimp, 1 bundle vermicelli, generous minced garlic, chopped scallions, steamed fish soy sauce, hot oil',
+                steps_zh: '1.粉丝泡软铺盘底。2.虾开背去虾线，摆在粉丝上。3.蒜末一半炸金黄，混合生蒜铺虾上。4.大火蒸6分钟。5.淋豉油，浇热油。',
+                steps_yue: '1.粉絲浸軟鋪碟底。2.蝦開背去腸，擺喺粉絲上面。3.蒜蓉一半炸金黃，撈埋生蒜鋪喺蝦上面。4.大火蒸6分鐘。5.淋豉油，淋滾油。',
+                steps_en: '1. Soak vermicelli, spread on plate. 2. Butterfly shrimp, place on noodles. 3. Mix fried and raw garlic, spread on shrimp. 4. Steam 6 min on high. 5. Drizzle soy sauce and hot oil.'
+            },
+            {
+                id: 36,
+                category: 'chinese',
+                emoji: '🥘',
+                name_zh: '水煮牛肉',
+                name_yue: '水煮牛肉',
+                name_en: 'Boiled Beef in Sichuan Sauce',
+                ingredients_zh: '牛肉片300g、豆芽、莴笋、火锅底料、干辣椒、花椒、蒜末、蛋清、淀粉',
+                ingredients_yue: '牛肉片300g、芽菜、萵筍、火鍋底料、乾辣椒、花椒、蒜蓉、蛋白、生粉',
+                ingredients_en: '300g sliced beef, bean sprouts, celtuce, hotpot base, dried chilies, Sichuan pepper, minced garlic, egg white, cornstarch',
+                steps_zh: '1.牛肉片加蛋清淀粉腌制。2.炒火锅底料加水煮开。3.焯熟豆芽莴笋铺碗底。4.滑入牛肉片煮至变色。5.倒入碗中，撒辣椒花椒蒜末，浇热油。',
+                steps_yue: '1.牛肉片加蛋白生粉醃製。2.炒火鍋底料加水煮滾。3.汆熟芽菜萵筍鋪碗底。4.滑入牛肉片煮到變色。5.倒入碗入面，灑辣椒花椒蒜蓉，淋滾油。',
+                steps_en: '1. Marinate beef with egg white and cornstarch. 2. Stir-fry hotpot base, add water, boil. 3. Blanch vegetables, place in bowl. 4. Slide beef in, cook until colored. 5. Pour into bowl, top with spices and garlic, pour hot oil.'
+            },
+            {
+                id: 37,
+                category: 'chinese',
+                emoji: '🍲',
+                name_zh: '砂锅豆腐',
+                name_yue: '砂鍋豆腐',
+                name_en: 'Claypot Tofu',
+                ingredients_zh: '嫩豆腐1块、白菜、粉丝、五花肉片、高汤、盐、白胡椒粉、葱花',
+                ingredients_yue: '嫩豆腐1嚿、白菜、粉絲、五花腩片、上湯、鹽、白胡椒粉、蔥花',
+                ingredients_en: '1 block silken tofu, napa cabbage, vermicelli, sliced pork belly, broth, salt, white pepper, chopped scallions',
+                steps_zh: '1.砂锅底铺白菜和粉丝。2.豆腐切块码在上面。3.五花肉片铺最上层。4.加入高汤，大火煮开转小火炖15分钟。5.加盐胡椒粉，撒葱花。',
+                steps_yue: '1.砂鍋底鋪白菜同粉絲。2.豆腐切件排喺上面。3.五花腩片鋪最上層。4.加入上湯，大火煮滾轉細火燉15分鐘。5.加鹽胡椒粉，灑蔥花。',
+                steps_en: '1. Layer cabbage and vermicelli in claypot. 2. Place tofu chunks on top. 3. Layer pork belly slices. 4. Add broth, boil then simmer 15 min. 5. Season, garnish with scallions.'
+            },
+            {
+                id: 38,
+                category: 'chinese',
+                emoji: '🥮',
+                name_zh: '萝卜糕',
+                name_yue: '蘿蔔糕',
+                name_en: 'Turnip Cake',
+                ingredients_zh: '白萝卜1根、粘米粉200g、腊肠、虾米、香菇、盐、糖、白胡椒粉',
+                ingredients_yue: '白蘿蔔1條、粘米粉200g、臘腸、蝦米、冬菇、鹽、糖、白胡椒粉',
+                ingredients_en: '1 daikon radish, 200g rice flour, Chinese sausage, dried shrimp, shiitake mushrooms, salt, sugar, white pepper',
+                steps_zh: '1.萝卜刨丝，腊肠香菇虾米切碎。2.炒香配料，加入萝卜丝炒软。3.粘米粉加水调浆，倒入炒好的萝卜中。4.倒入模具蒸40分钟。5.冷却切片，煎至两面金黄。',
+                steps_yue: '1.蘿蔔刨絲，臘腸冬菇蝦米切碎。2.炒香配料，加入蘿蔔絲炒軟。3.粘米粉加水調漿，倒入炒好嘅蘿蔔度。4.倒入模具蒸40分鐘。5.攤凍切片，煎到兩面金黃。',
+                steps_en: '1. Shred radish, dice sausage, mushrooms, shrimp. 2. Stir-fry ingredients, add radish until soft. 3. Mix rice flour with water, pour into radish mixture. 4. Steam in mold 40 min. 5. Cool, slice, pan-fry until golden.'
+            },
+            {
+                id: 39,
+                category: 'chinese',
+                emoji: '🍗',
+                name_zh: '口水鸡',
+                name_yue: '口水雞',
+                name_en: 'Mouthwatering Chicken',
+                ingredients_zh: '鸡腿2只、辣椒油、花椒油、蒜泥、酱油、醋、糖、芝麻酱、花生碎、葱花',
+                ingredients_yue: '雞髀2隻、辣椒油、花椒油、蒜蓉、豉油、醋、糖、芝麻醬、花生碎、蔥花',
+                ingredients_en: '2 chicken legs, chili oil, Sichuan pepper oil, garlic paste, soy sauce, vinegar, sugar, sesame paste, crushed peanuts, chopped scallions',
+                steps_zh: '1.鸡腿煮熟，过冰水，斩件。2.调酱汁：辣椒油花椒油蒜泥酱油醋糖芝麻酱。3.酱汁浇在鸡上。4.撒花生碎和葱花。5.冷藏半小时更入味。',
+                steps_yue: '1.雞髀煮熟，過冰水，斬件。2.調醬汁：辣椒油花椒油蒜蓉豉油醋糖芝麻醬。3.醬汁淋喺雞上面。4.灑花生碎同蔥花。5.雪半個鐘更入味。',
+                steps_en: '1. Boil chicken legs, ice bath, chop. 2. Mix sauce: chili oil, pepper oil, garlic, soy sauce, vinegar, sugar, sesame paste. 3. Pour sauce over chicken. 4. Top with peanuts and scallions. 5. Chill 30 min for better flavor.'
+            },
+            {
+                id: 40,
+                category: 'chinese',
+                emoji: '🍜',
+                name_zh: '葱油拌面',
+                name_yue: '蔥油拌麵',
+                name_en: 'Scallion Oil Noodles',
+                ingredients_zh: '面条150g、小葱1把、食用油、酱油、老抽、白糖',
+                ingredients_yue: '麵條150g、小蔥1扎、食用油、豉油、老抽、白糖',
+                ingredients_en: '150g noodles, 1 bunch scallions, oil, soy sauce, dark soy sauce, sugar',
+                steps_zh: '1.小葱切段，小火慢炸至金黄焦脆。2.炸好的葱油中加入酱油老抽白糖调匀。3.面条煮熟捞出。4.浇上葱油酱汁拌匀。5.放上炸好的葱段。',
+                steps_yue: '1.小蔥切段，細火慢炸到金黃焦脆。2.炸好嘅蔥油入面加豉油老抽白糖撈勻。3.麵條煮熟撈起。4.淋上蔥油醬汁撈勻。5.放上炸好嘅蔥段。',
+                steps_en: '1. Cut scallions, fry on low heat until golden and crispy. 2. Mix scallion oil with soy sauce, dark soy sauce, sugar. 3. Cook noodles, drain. 4. Pour sauce over, toss well. 5. Top with crispy scallions.'
+            },
+
+            // ===== 西餐 (25道) =====
+            {
+                id: 41,
+                category: 'western',
+                emoji: '🍝',
+                name_zh: '意大利肉酱面',
+                name_yue: '肉醬意粉',
+                name_en: 'Spaghetti Bolognese',
+                ingredients_zh: '意大利面200g、牛肉末200g、番茄罐头、洋葱、胡萝卜、芹菜、蒜、红酒、橄榄油、帕玛森芝士',
+                ingredients_yue: '意粉200g、牛肉碎200g、番茄罐頭、洋蔥、甘筍、西芹、蒜、紅酒、橄欖油、巴馬臣芝士',
+                ingredients_en: '200g spaghetti, 200g minced beef, canned tomatoes, onion, carrot, celery, garlic, red wine, olive oil, Parmesan cheese',
+                steps_zh: '1.洋葱胡萝卜芹菜切细丁。2.橄榄油炒蔬菜丁至软。3.加牛肉末炒至变色，加红酒收干。4.加番茄罐头炖煮30分钟。5.煮面至弹牙，拌入肉酱，撒芝士。',
+                steps_yue: '1.洋蔥甘筍西芹切細粒。2.橄欖油炒蔬菜粒至軟。3.加牛肉碎炒到變色，加紅酒收乾。4.加番茄罐頭燉煮30分鐘。5.煮意粉至彈牙，撈入肉醬，灑芝士。',
+                steps_en: '1. Finely dice onion, carrot, celery. 2. Sauté in olive oil until soft. 3. Add beef, brown, deglaze with red wine. 4. Add tomatoes, simmer 30 min. 5. Cook pasta al dente, toss with sauce, grate cheese.'
+            },
+            {
+                id: 42,
+                category: 'western',
+                emoji: '🥩',
+                name_zh: '煎牛排配黑椒汁',
+                name_yue: '煎牛扒配黑椒汁',
+                name_en: 'Pan-Seared Steak with Black Pepper Sauce',
+                ingredients_zh: '牛排(西冷/肋眼)200g、黄油、蒜、迷迭香、黑胡椒、奶油、盐',
+                ingredients_yue: '牛扒(西冷/肉眼)200g、牛油、蒜、迷迭香、黑胡椒、忌廉、鹽',
+                ingredients_en: '200g steak (sirloin/ribeye), butter, garlic, rosemary, black pepper, cream, salt',
+                steps_zh: '1.牛排室温回温，擦干撒盐和黑胡椒。2.热锅大火每面煎2-3分钟。3.加黄油蒜迷迭香，浇淋牛排。4.静置5分钟。5.锅中余汁加奶油做黑椒汁。',
+                steps_yue: '1.牛扒室溫回溫，抹乾灑鹽同黑胡椒。2.熱鑊大火每面煎2-3分鐘。3.加牛油蒜迷迭香，淋汁上牛扒。4.靜置5分鐘。5.鑊中餘汁加忌廉做黑椒汁。',
+                steps_en: '1. Bring steak to room temp, pat dry, season. 2. Sear on high heat 2-3 min per side. 3. Add butter, garlic, rosemary, baste steak. 4. Rest 5 min. 5. Make pepper sauce with pan drippings and cream.'
+            },
+            {
+                id: 43,
+                category: 'western',
+                emoji: '🍕',
+                name_zh: '玛格丽特披萨',
+                name_yue: '瑪格麗特薄餅',
+                name_en: 'Margherita Pizza',
+                ingredients_zh: '披萨面团、番茄酱、新鲜马苏里拉芝士、罗勒叶、橄榄油、盐',
+                ingredients_yue: '薄餅麵糰、番茄醬、新鮮水牛芝士、羅勒葉、橄欖油、鹽',
+                ingredients_en: 'Pizza dough, tomato sauce, fresh mozzarella, basil leaves, olive oil, salt',
+                steps_zh: '1.面团擀成圆形薄饼。2.抹番茄酱，铺马苏里拉芝士片。3.烤箱250°C烤10-12分钟。4.出炉放罗勒叶，淋橄榄油。5.切片享用。',
+                steps_yue: '1.麵糰擀成圓形薄餅。2.搽番茄醬，鋪水牛芝士片。3.焗爐250°C焗10-12分鐘。4.出爐放羅勒葉，淋橄欖油。5.切片享用。',
+                steps_en: '1. Roll dough into round, thin base. 2. Spread tomato sauce, layer mozzarella. 3. Bake at 250°C for 10-12 min. 4. Top with basil, drizzle olive oil. 5. Slice and enjoy.'
+            },
+            {
+                id: 44,
+                category: 'western',
+                emoji: '🍔',
+                name_zh: '经典牛肉汉堡',
+                name_yue: '經典牛肉漢堡',
+                name_en: 'Classic Beef Burger',
+                ingredients_zh: '牛肉馅200g、汉堡面包、生菜、番茄、洋葱、芝士片、盐、黑胡椒',
+                ingredients_yue: '牛肉碎200g、漢堡麵包、生菜、番茄、洋蔥、芝士片、鹽、黑胡椒',
+                ingredients_en: '200g ground beef, burger buns, lettuce, tomato, onion, cheese slice, salt, black pepper',
+                steps_zh: '1.牛肉馅加盐胡椒捏成肉饼。2.热锅煎肉饼每面3-4分钟。3.最后放芝士片盖上融化。4.面包烤香，组装：生菜番茄肉饼洋葱。5.可加番茄酱或芥末酱。',
+                steps_yue: '1.牛肉碎加鹽胡椒捏成肉餅。2.熱鑊煎肉餅每面3-4分鐘。3.最後放芝士片蓋上等佢溶。4.麵包烘香，組裝：生菜番茄肉餅洋蔥。5.可以加茄汁或者芥辣醬。',
+                steps_en: '1. Season beef, shape into patties. 2. Pan-fry 3-4 min per side. 3. Top with cheese, cover to melt. 4. Toast buns, assemble with lettuce, tomato, patty, onion. 5. Add ketchup or mustard.'
+            },
+            {
+                id: 45,
+                category: 'western',
+                emoji: '🥗',
+                name_zh: '凯撒沙拉',
+                name_yue: '凱撒沙律',
+                name_en: 'Caesar Salad',
+                ingredients_zh: '罗马生菜、培根、帕玛森芝士、面包丁、凯撒酱(蛋黄酱蒜柠檬汁鳀鱼)',
+                ingredients_yue: '羅馬生菜、煙肉、巴馬臣芝士、麵包粒、凱撒醬(蛋黃醬蒜檸檬汁鯷魚)',
+                ingredients_en: 'Romaine lettuce, bacon, Parmesan cheese, croutons, Caesar dressing (mayo, garlic, lemon juice, anchovies)',
+                steps_zh: '1.生菜洗净撕成块。2.培根煎脆切碎。3.面包丁烤至金黄。4.所有材料混合，淋凯撒酱。5.刨上帕玛森芝士片。',
+                steps_yue: '1.生菜洗淨撕成塊。2.煙肉煎脆切碎。3.麵包粒焗到金黃。4.所有材料撈勻，淋凱撒醬。5.刨上巴馬臣芝士片。',
+                steps_en: '1. Wash and tear lettuce. 2. Fry bacon until crispy, crumble. 3. Toast croutons until golden. 4. Toss all ingredients with dressing. 5. Shave Parmesan on top.'
+            },
+            {
+                id: 46,
+                category: 'western',
+                emoji: '🧀',
+                name_zh: '奶油蘑菇浓汤',
+                name_yue: '忌廉蘑菇濃湯',
+                name_en: 'Cream of Mushroom Soup',
+                ingredients_zh: '蘑菇300g、洋葱、黄油、面粉、奶油、牛奶、盐、黑胡椒、百里香',
+                ingredients_yue: '蘑菇300g、洋蔥、牛油、麵粉、忌廉、牛奶、鹽、黑胡椒、百里香',
+                ingredients_en: '300g mushrooms, onion, butter, flour, cream, milk, salt, black pepper, thyme',
+                steps_zh: '1.蘑菇切片，洋葱切丁。2.黄油炒洋葱至透明，加蘑菇炒出水分。3.加面粉炒匀，倒入牛奶搅拌。4.煮至浓稠，加奶油。5.用搅拌机打匀(可选)，加盐胡椒调味。',
+                steps_yue: '1.蘑菇切片，洋蔥切粒。2.牛油炒洋蔥至透明，加蘑菇炒出水分。3.加麵粉炒勻，倒入牛奶攪拌。4.煮到濃稠，加忌廉。5.用攪拌機打勻(可選)，加鹽胡椒調味。',
+                steps_en: '1. Slice mushrooms, dice onion. 2. Sauté onion in butter, add mushrooms until water evaporates. 3. Stir in flour, add milk while stirring. 4. Simmer until thick, add cream. 5. Blend smooth (optional), season.'
+            },
+            {
+                id: 47,
+                category: 'western',
+                emoji: '🍗',
+                name_zh: '烤鸡腿配迷迭香土豆',
+                name_yue: '烤雞髀配迷迭香薯仔',
+                name_en: 'Roasted Chicken Legs with Rosemary Potatoes',
+                ingredients_zh: '鸡腿4只、土豆、迷迭香、蒜、橄榄油、盐、黑胡椒、柠檬',
+                ingredients_yue: '雞髀4隻、薯仔、迷迭香、蒜、橄欖油、鹽、黑胡椒、檸檬',
+                ingredients_en: '4 chicken legs, potatoes, rosemary, garlic, olive oil, salt, black pepper, lemon',
+                steps_zh: '1.鸡腿抹盐胡椒橄榄油腌制。2.土豆切块拌橄榄油迷迭香。3.烤盘铺鸡腿和土豆。4.烤箱200°C烤40分钟。5.挤柠檬汁提鲜。',
+                steps_yue: '1.雞髀搽鹽胡椒橄欖油醃製。2.薯仔切件撈橄欖油迷迭香。3.烤盤鋪雞髀同薯仔。4.焗爐200°C焗40分鐘。5.唧檸檬汁提鮮。',
+                steps_en: '1. Season chicken with salt, pepper, olive oil. 2. Toss potato chunks with oil and rosemary. 3. Arrange on baking tray. 4. Roast at 200°C for 40 min. 5. Squeeze lemon over.'
+            },
+            {
+                id: 48,
+                category: 'western',
+                emoji: '🧅',
+                name_zh: '法式洋葱汤',
+                name_yue: '法式洋蔥湯',
+                name_en: 'French Onion Soup',
+                ingredients_zh: '洋葱4个、黄油、牛肉高汤、白葡萄酒、法棍面包、格鲁耶尔芝士',
+                ingredients_yue: '洋蔥4個、牛油、牛肉上湯、白酒、法棍麵包、格魯耶爾芝士',
+                ingredients_en: '4 onions, butter, beef broth, white wine, baguette, Gruyère cheese',
+                steps_zh: '1.洋葱切丝，黄油小火炒40分钟至焦糖色。2.加白葡萄酒收干。3.倒入牛肉高汤炖20分钟。4.盛入碗中，放面包片和芝士。5.入烤箱烤至芝士融化金黄。',
+                steps_yue: '1.洋蔥切絲，牛油細火炒40分鐘至焦糖色。2.加白酒收乾。3.倒入牛肉上湯燉20分鐘。4.盛入碗入面，放麵包片同芝士。5.入焗爐焗到芝士溶化金黃。',
+                steps_en: '1. Slice onions, cook in butter on low 40 min until caramelized. 2. Deglaze with white wine. 3. Add beef broth, simmer 20 min. 4. Ladle into bowls, top with bread and cheese. 5. Broil until cheese melts and browns.'
+            },
+            {
+                id: 49,
+                category: 'western',
+                emoji: '🍰',
+                name_zh: '提拉米苏',
+                name_yue: '提拉米蘇',
+                name_en: 'Tiramisu',
+                ingredients_zh: '马斯卡彭芝士250g、手指饼干、浓缩咖啡、可可粉、鸡蛋、糖、朗姆酒(可选)',
+                ingredients_yue: '馬斯卡彭芝士250g、手指餅乾、特濃咖啡、可可粉、雞蛋、糖、冧酒(可選)',
+                ingredients_en: '250g mascarpone, ladyfinger biscuits, espresso, cocoa powder, eggs, sugar, rum (optional)',
+                steps_zh: '1.蛋黄加糖打至浓稠，拌入马斯卡彭。2.蛋白打至硬性发泡，翻拌入芝士糊。3.手指饼干蘸咖啡液铺底。4.一层芝士糊一层饼干交替。5.冷藏4小时，撒可可粉。',
+                steps_yue: '1.蛋黃加糖打至濃稠，撈入馬斯卡彭。2.蛋白打至硬性起泡，翻拌入芝士糊。3.手指餅乾浸咖啡液鋪底。4.一層芝士糊一層餅乾交替。5.雪4個鐘，灑可可粉。',
+                steps_en: '1. Beat yolks with sugar, fold in mascarpone. 2. Whip egg whites to stiff peaks, fold into cheese mixture. 3. Dip biscuits in espresso, layer on bottom. 4. Alternate layers of cream and biscuits. 5. Chill 4h, dust with cocoa.'
+            },
+            {
+                id: 50,
+                category: 'western',
+                emoji: '🥐',
+                name_zh: '法式可颂',
+                name_yue: '法式牛角包',
+                name_en: 'Croissant',
+                ingredients_zh: '高筋面粉250g、黄油125g、牛奶、糖、盐、酵母',
+                ingredients_yue: '高筋麵粉250g、牛油125g、牛奶、糖、鹽、酵母',
+                ingredients_en: '250g bread flour, 125g butter, milk, sugar, salt, yeast',
+                steps_zh: '1.面粉牛奶糖盐酵母和成面团。2.冷藏发酵后包裹黄油片。3.多次折叠擀开(3次三折)。4.冷藏松弛后擀成三角形卷起。5.刷蛋液200°C烤15-18分钟。',
+                steps_yue: '1.麵粉牛奶糖鹽酵母搓成麵糰。2.冷藏發酵之後包裹牛油片。3.多次摺疊擀開(3次三摺)。4.冷藏鬆弛之後擀成三角形捲起。5.掃蛋漿200°C焗15-18分鐘。',
+                steps_en: '1. Mix flour, milk, sugar, salt, yeast into dough. 2. Chill, then encase butter block. 3. Fold and roll multiple times (3 turns). 4. Chill, cut triangles, roll up. 5. Brush with egg wash, bake at 200°C for 15-18 min.'
+            },
+            {
+                id: 51,
+                category: 'western',
+                emoji: '🥧',
+                name_zh: '牧羊人派',
+                name_yue: '牧羊人批',
+                name_en: "Shepherd's Pie",
+                ingredients_zh: '羊肉末300g、土豆、洋葱、胡萝卜、豌豆、黄油、牛奶、盐、胡椒、番茄膏',
+                ingredients_yue: '羊肉碎300g、薯仔、洋蔥、甘筍、青豆、牛油、牛奶、鹽、胡椒、番茄膏',
+                ingredients_en: '300g minced lamb, potatoes, onion, carrots, peas, butter, milk, salt, pepper, tomato paste',
+                steps_zh: '1.土豆煮熟加黄油牛奶做成土豆泥。2.炒洋葱胡萝卜，加羊肉末炒变色。3.加番茄膏豌豆调味。4.肉酱铺烤盘，上面铺土豆泥。5.烤箱200°C烤25分钟至表面金黄。',
+                steps_yue: '1.薯仔煮熟加牛油牛奶整成薯蓉。2.炒洋蔥甘筍，加羊肉碎炒變色。3.加番茄膏青豆調味。4.肉醬鋪烤盤，上面鋪薯蓉。5.焗爐200°C焗25分鐘至表面金黃。',
+                steps_en: '1. Boil potatoes, mash with butter and milk. 2. Sauté onion and carrots, brown lamb. 3. Add tomato paste and peas, season. 4. Spread meat in dish, top with mash. 5. Bake at 200°C for 25 min until golden.'
+            },
+            {
+                id: 52,
+                category: 'western',
+                emoji: '🍤',
+                name_zh: '炸鱼薯条',
+                name_yue: '炸魚薯條',
+                name_en: 'Fish and Chips',
+                ingredients_zh: '鳕鱼柳2块、啤酒、面粉、土豆、盐、麦芽醋、塔塔酱',
+                ingredients_yue: '鱈魚柳2塊、啤酒、麵粉、薯仔、鹽、麥芽醋、他他醬',
+                ingredients_en: '2 cod fillets, beer, flour, potatoes, salt, malt vinegar, tartar sauce',
+                steps_zh: '1.土豆切条炸至金黄做薯条。2.面粉加啤酒调成面糊。3.鱼柳裹糊油炸至金黄酥脆。4.撒盐，配塔塔酱和麦芽醋。5.趁热吃。',
+                steps_yue: '1.薯仔切條炸到金黃做薯條。2.麵粉加啤酒開成麵糊。3.魚柳上糊油炸至金黃酥脆。4.灑鹽，配他他醬同麥芽醋。5.趁熱食。',
+                steps_en: '1. Cut potatoes into chips, fry until golden. 2. Make batter with flour and beer. 3. Coat fish, deep-fry until crispy golden. 4. Season with salt, serve with tartar sauce and malt vinegar. 5. Eat hot.'
+            },
+            {
+                id: 53,
+                category: 'western',
+                emoji: '🥞',
+                name_zh: '美式松饼',
+                name_yue: '美式班戟',
+                name_en: 'American Pancakes',
+                ingredients_zh: '面粉150g、牛奶180ml、鸡蛋1个、黄油30g、泡打粉、糖、盐、枫糖浆',
+                ingredients_yue: '麵粉150g、牛奶180ml、雞蛋1隻、牛油30g、泡打粉、糖、鹽、楓糖漿',
+                ingredients_en: '150g flour, 180ml milk, 1 egg, 30g butter, baking powder, sugar, salt, maple syrup',
+                steps_zh: '1.干料混合：面粉泡打粉糖盐。2.湿料混合：牛奶鸡蛋融化黄油。3.两者混合至无干粉即可。4.平底锅小火煎至冒泡翻面。5.叠放淋枫糖浆，加水果。',
+                steps_yue: '1.乾料撈勻：麵粉泡打粉糖鹽。2.濕料撈勻：牛奶雞蛋溶化牛油。3.兩者混合到無乾粉就得。4.平底鑊細火煎到起泡反轉。5.疊起淋楓糖漿，加生果。',
+                steps_en: '1. Mix dry ingredients: flour, baking powder, sugar, salt. 2. Mix wet: milk, egg, melted butter. 3. Combine until just mixed. 4. Cook on low heat until bubbles form, flip. 5. Stack, drizzle maple syrup, add fruit.'
+            },
+            {
+                id: 54,
+                category: 'western',
+                emoji: '🦞',
+                name_zh: '龙虾浓汤',
+                name_yue: '龍蝦濃湯',
+                name_en: 'Lobster Bisque',
+                ingredients_zh: '龙虾1只、洋葱、胡萝卜、番茄膏、白兰地、奶油、黄油、面粉',
+                ingredients_yue: '龍蝦1隻、洋蔥、甘筍、番茄膏、白蘭地、忌廉、牛油、麵粉',
+                ingredients_en: '1 lobster, onion, carrot, tomato paste, brandy, cream, butter, flour',
+                steps_zh: '1.龙虾煮熟取肉，壳留用。2.黄油炒洋葱胡萝卜和虾壳。3.加番茄膏面粉炒匀。4.加白兰地点燃，加水炖30分钟。5.过滤后加奶油和龙虾肉。',
+                steps_yue: '1.龍蝦煮熟拆肉，殼留用。2.牛油炒洋蔥甘筍同蝦殼。3.加番茄膏麵粉炒勻。4.加白蘭地點著，加水燉30分鐘。5.隔渣之後加忌廉同龍蝦肉。',
+                steps_en: '1. Cook lobster, remove meat, reserve shells. 2. Sauté onion, carrot and shells in butter. 3. Add tomato paste and flour. 4. Deglaze with brandy, add water, simmer 30 min. 5. Strain, add cream and lobster meat.'
+            },
+            {
+                id: 55,
+                category: 'western',
+                emoji: '🥪',
+                name_zh: '总汇三明治',
+                name_yue: '公司三文治',
+                name_en: 'Club Sandwich',
+                ingredients_zh: '吐司面包3片、鸡胸肉、培根、生菜、番茄、蛋黄酱、鸡蛋',
+                ingredients_yue: '多士麵包3塊、雞胸肉、煙肉、生菜、番茄、蛋黃醬、雞蛋',
+                ingredients_en: '3 slices toast bread, chicken breast, bacon, lettuce, tomato, mayonnaise, egg',
+                steps_zh: '1.鸡胸肉煎熟切片，培根煎脆。2.煎一个荷包蛋。3.吐司烤至微焦。4.依次叠放：吐司-生菜番茄鸡肉-吐司-培根鸡蛋-吐司。5.对角切开用竹签固定。',
+                steps_yue: '1.雞胸肉煎熟切片，煙肉煎脆。2.煎一隻荷包蛋。3.多士烘到微焦。4.依次疊放：多士-生菜番茄雞肉-多士-煙肉雞蛋-多士。5.對角切開用竹籤固定。',
+                steps_en: '1. Cook chicken breast, slice; fry bacon crispy. 2. Fry an egg sunny-side up. 3. Toast bread. 4. Layer: toast-lettuce-tomato-chicken-toast-bacon-egg-toast. 5. Cut diagonally, secure with picks.'
+            },
+            {
+                id: 56,
+                category: 'western',
+                emoji: '🍲',
+                name_zh: '匈牙利炖牛肉',
+                name_yue: '匈牙利燉牛肉',
+                name_en: 'Goulash',
+                ingredients_zh: '牛肉块500g、洋葱、红椒粉、番茄、土豆、红椒、蒜、葛缕子',
+                ingredients_yue: '牛肉件500g、洋蔥、紅椒粉、番茄、薯仔、紅椒、蒜、葛縷子',
+                ingredients_en: '500g beef chunks, onion, paprika, tomatoes, potatoes, bell peppers, garlic, caraway seeds',
+                steps_zh: '1.牛肉切块，洋葱切丁。2.热油炒洋葱至透明。3.加红椒粉翻炒出香。4.加牛肉番茄和水，炖1.5小时。5.加土豆红椒再炖30分钟。',
+                steps_yue: '1.牛肉切件，洋蔥切粒。2.熱油炒洋蔥至透明。3.加紅椒粉翻炒出香。4.加牛肉番茄同水，燉1.5小時。5.加薯仔紅椒再燉30分鐘。',
+                steps_en: '1. Cube beef, dice onion. 2. Sauté onion in oil. 3. Add paprika, stir until fragrant. 4. Add beef, tomatoes, water, stew 1.5h. 5. Add potatoes and peppers, stew 30 min more.'
+            },
+            {
+                id: 57,
+                category: 'western',
+                emoji: '🧁',
+                name_zh: '巧克力熔岩蛋糕',
+                name_yue: '朱古力熔岩蛋糕',
+                name_en: 'Chocolate Lava Cake',
+                ingredients_zh: '黑巧克力100g、黄油50g、鸡蛋2个、糖40g、面粉30g',
+                ingredients_yue: '黑朱古力100g、牛油50g、雞蛋2隻、糖40g、麵粉30g',
+                ingredients_en: '100g dark chocolate, 50g butter, 2 eggs, 40g sugar, 30g flour',
+                steps_zh: '1.巧克力和黄油隔水融化。2.鸡蛋加糖打发至浓稠。3.拌入巧克力糊，筛入面粉。4.倒入模具，冷藏30分钟。5.烤箱220°C烤12分钟，表面成型内心流动。',
+                steps_yue: '1.朱古力同牛油隔水溶化。2.雞蛋加糖打發至濃稠。3.撈入朱古力糊，篩入麵粉。4.倒入模具，雪30分鐘。5.焗爐220°C焗12分鐘，表面成型內心流動。',
+                steps_en: '1. Melt chocolate and butter over water bath. 2. Beat eggs and sugar until thick. 3. Fold into chocolate, sift in flour. 4. Pour into molds, chill 30 min. 5. Bake at 220°C for 12 min, set outside, molten inside.'
+            },
+            {
+                id: 58,
+                category: 'western',
+                emoji: '🥗',
+                name_zh: '希腊沙拉',
+                name_yue: '希臘沙律',
+                name_en: 'Greek Salad',
+                ingredients_zh: '番茄、黄瓜、青椒、红洋葱、橄榄、菲达芝士、橄榄油、红酒醋、牛至',
+                ingredients_yue: '番茄、青瓜、青椒、紅洋蔥、橄欖、菲達芝士、橄欖油、紅酒醋、奧勒岡',
+                ingredients_en: 'Tomatoes, cucumber, bell pepper, red onion, olives, feta cheese, olive oil, red wine vinegar, oregano',
+                steps_zh: '1.所有蔬菜切块。2.放入大碗中。3.加入橄榄和菲达芝士块。4.淋橄榄油和红酒醋。5.撒牛至，轻轻拌匀。',
+                steps_yue: '1.所有蔬菜切件。2.放入大碗入面。3.加入橄欖同菲達芝士件。4.淋橄欖油同紅酒醋。5.灑奧勒岡，輕輕撈勻。',
+                steps_en: '1. Chop all vegetables into chunks. 2. Place in a large bowl. 3. Add olives and feta chunks. 4. Drizzle olive oil and vinegar. 5. Sprinkle oregano, toss gently.'
+            },
+            {
+                id: 59,
+                category: 'western',
+                emoji: '🍗',
+                name_zh: '烤火鸡',
+                name_yue: '烤火雞',
+                name_en: 'Roast Turkey',
+                ingredients_zh: '火鸡1只、黄油、迷迭香、百里香、蒜、柠檬、洋葱、盐、黑胡椒',
+                ingredients_yue: '火雞1隻、牛油、迷迭香、百里香、蒜、檸檬、洋蔥、鹽、黑胡椒',
+                ingredients_en: '1 turkey, butter, rosemary, thyme, garlic, lemon, onion, salt, black pepper',
+                steps_zh: '1.火鸡解冻，内外抹盐胡椒。2.黄油混合香草抹在皮下。3.腹腔塞入柠檬洋葱蒜。4.烤箱180°C烤约3小时(每500g烤30分钟)。5.中途刷黄油，烤至内部温度75°C。',
+                steps_yue: '1.火雞解凍，內外搽鹽胡椒。2.牛油撈香草搽喺皮下。3.腹腔塞入檸檬洋蔥蒜。4.焗爐180°C焗約3小時(每500g焗30分鐘)。5.中途掃牛油，焗到入面溫度75°C。',
+                steps_en: '1. Thaw turkey, season inside and out. 2. Mix butter with herbs, rub under skin. 3. Stuff cavity with lemon, onion, garlic. 4. Roast at 180°C about 3h (30 min per 500g). 5. Baste with butter, cook to internal temp 75°C.'
+            },
+            {
+                id: 60,
+                category: 'western',
+                emoji: '🍝',
+                name_zh: '培根蛋酱意面',
+                name_yue: '卡邦尼意粉',
+                name_en: 'Carbonara',
+                ingredients_zh: '意大利面200g、培根(或风干猪脸肉)、鸡蛋黄2个、帕玛森芝士、黑胡椒',
+                ingredients_yue: '意粉200g、煙肉(或風乾豬面肉)、雞蛋黃2個、巴馬臣芝士、黑胡椒',
+                ingredients_en: '200g spaghetti, bacon (or guanciale), 2 egg yolks, Parmesan cheese, black pepper',
+                steps_zh: '1.培根切丁煎至酥脆。2.蛋黄加芝士碎和大量黑胡椒搅匀。3.煮面至弹牙，保留半杯面汤。4.离火，拌入蛋黄芝士糊。5.加培根和面汤调节浓稠度。',
+                steps_yue: '1.煙肉切粒煎到酥脆。2.蛋黃加芝士碎同大量黑胡椒攪勻。3.煮意粉至彈牙，留返半杯麵湯。4.離火，撈入蛋黃芝士糊。5.加煙肉同麵湯調節濃稠度。',
+                steps_en: '1. Dice bacon, fry until crispy. 2. Mix yolks with grated cheese and lots of pepper. 3. Cook pasta al dente, reserve some pasta water. 4. Off heat, toss with egg-cheese mixture. 5. Add bacon and pasta water to adjust consistency.'
+            },
+            {
+                id: 61,
+                category: 'western',
+                emoji: '🥘',
+                name_zh: '西班牙海鲜饭',
+                name_yue: '西班牙海鮮飯',
+                name_en: 'Paella',
+                ingredients_zh: '短粒米200g、虾、青口、鱿鱼、鸡肉、番茄、洋葱、蒜、藏红花、高汤、橄榄油',
+                ingredients_yue: '短粒米200g、蝦、青口、魷魚、雞肉、番茄、洋蔥、蒜、番紅花、上湯、橄欖油',
+                ingredients_en: '200g short-grain rice, shrimp, mussels, squid, chicken, tomato, onion, garlic, saffron, broth, olive oil',
+                steps_zh: '1.橄榄油煎鸡肉和海鲜盛出。2.炒洋葱蒜番茄。3.加米翻炒，加藏红花高汤。4.不搅拌，中火煮至米吸汤汁。5.摆上海鲜，小火形成锅巴。',
+                steps_yue: '1.橄欖油煎雞肉同海鮮盛起。2.炒洋蔥蒜番茄。3.加米翻炒，加番紅花上湯。4.唔好攪，中火煮到米吸湯汁。5.擺上海鮮，細火形成飯焦。',
+                steps_en: '1. Sear chicken and seafood in olive oil, set aside. 2. Sauté onion, garlic, tomato. 3. Add rice, stir, add saffron broth. 4. Cook on medium without stirring. 5. Arrange seafood on top, low heat for socarrat.'
+            },
+            {
+                id: 62,
+                category: 'western',
+                emoji: '🍎',
+                name_zh: '苹果派',
+                name_yue: '蘋果批',
+                name_en: 'Apple Pie',
+                ingredients_zh: '苹果4个、派皮、黄油、糖、肉桂粉、柠檬汁、面粉',
+                ingredients_yue: '蘋果4個、批皮、牛油、糖、肉桂粉、檸檬汁、麵粉',
+                ingredients_en: '4 apples, pie crust, butter, sugar, cinnamon, lemon juice, flour',
+                steps_zh: '1.苹果去皮切片拌糖肉桂柠檬汁。2.派皮铺烤盘，填入苹果馅。3.盖上另一层派皮，边缘封口。4.表面划几刀，刷蛋液。5.烤箱190°C烤45分钟。',
+                steps_yue: '1.蘋果去皮切片撈糖肉桂檸檬汁。2.批皮鋪烤盤，填入蘋果餡。3.蓋上另一層批皮，邊緣封口。4.表面界幾刀，掃蛋漿。5.焗爐190°C焗45分鐘。',
+                steps_en: '1. Peel and slice apples, toss with sugar, cinnamon, lemon. 2. Line dish with crust, fill with apples. 3. Top with second crust, seal edges. 4. Score top, brush with egg wash. 5. Bake at 190°C for 45 min.'
+            },
+            {
+                id: 63,
+                category: 'western',
+                emoji: '🍲',
+                name_zh: '马赛鱼汤',
+                name_yue: '馬賽魚湯',
+                name_en: 'Bouillabaisse',
+                ingredients_zh: '各种海鱼、虾、青口、番茄、洋葱、蒜、藏红花、茴香、橙皮、橄榄油',
+                ingredients_yue: '各種海魚、蝦、青口、番茄、洋蔥、蒜、番紅花、茴香、橙皮、橄欖油',
+                ingredients_en: 'Assorted fish, shrimp, mussels, tomatoes, onion, garlic, saffron, fennel, orange peel, olive oil',
+                steps_zh: '1.橄榄油炒洋葱蒜茴香。2.加番茄藏红花橙皮煮成汤底。3.放入鱼块炖煮15分钟。4.加入虾和青口煮至开口。5.配烤面包和 rouille 酱。',
+                steps_yue: '1.橄欖油炒洋蔥蒜茴香。2.加番茄番紅花橙皮煮成湯底。3.放入魚件燉煮15分鐘。4.加入蝦同青口煮到開口。5.配烘麵包同 rouille 醬。',
+                steps_en: '1. Sauté onion, garlic, fennel in olive oil. 2. Add tomatoes, saffron, orange peel for broth. 3. Add fish chunks, simmer 15 min. 4. Add shrimp and mussels, cook until open. 5. Serve with croutons and rouille.'
+            },
+            {
+                id: 64,
+                category: 'western',
+                emoji: '🥓',
+                name_zh: '班尼迪克蛋',
+                name_yue: '班尼迪蛋',
+                name_en: 'Eggs Benedict',
+                ingredients_zh: '英式松饼、火腿(或烟熏三文鱼)、水波蛋、荷兰酱(黄油蛋黄柠檬汁)',
+                ingredients_yue: '英式鬆餅、火腿(或煙三文魚)、水波蛋、荷蘭醬(牛油蛋黃檸檬汁)',
+                ingredients_en: 'English muffins, ham (or smoked salmon), poached eggs, hollandaise sauce (butter, egg yolks, lemon juice)',
+                steps_zh: '1.做荷兰酱：蛋黄加柠檬汁隔水打至浓稠，慢慢加入融化黄油。2.水波蛋：水中加醋，搅漩涡打入鸡蛋煮3分钟。3.松饼烤香，放上火腿。4.放水波蛋，淋荷兰酱。5.撒少许黑胡椒。',
+                steps_yue: '1.整荷蘭醬：蛋黃加檸檬汁隔水打至濃稠，慢慢加入溶化牛油。2.水波蛋：水加醋，攪漩渦打入雞蛋煮3分鐘。3.鬆餅烘香，放上火腿。4.放水波蛋，淋荷蘭醬。5.灑少少黑胡椒。',
+                steps_en: '1. Make hollandaise: whisk yolks with lemon juice over water bath, slowly add melted butter. 2. Poach eggs: add vinegar to water, create vortex, cook egg 3 min. 3. Toast muffins, top with ham. 4. Place poached egg, drizzle hollandaise. 5. Sprinkle pepper.'
+            },
+            {
+                id: 65,
+                category: 'western',
+                emoji: '🥩',
+                name_zh: '威灵顿牛排',
+                name_yue: '威靈頓牛扒',
+                name_en: 'Beef Wellington',
+                ingredients_zh: '牛里脊500g、蘑菇、帕尔马火腿、酥皮、芥末酱、盐、黑胡椒、黄油',
+                ingredients_yue: '牛里脊500g、蘑菇、巴馬火腿、酥皮、芥辣醬、鹽、黑胡椒、牛油',
+                ingredients_en: '500g beef tenderloin, mushrooms, Parma ham, puff pastry, mustard, salt, black pepper, butter',
+                steps_zh: '1.牛肉煎至表面焦黄，刷芥末酱。2.蘑菇切碎炒干成"蘑菇泥"。3.保鲜膜上铺火腿，抹蘑菇泥，放牛肉卷紧。4.酥皮包裹，刷蛋液划花纹。5.烤箱200°C烤25-30分钟，静置后切片。',
+                steps_yue: '1.牛肉煎到表面焦黃，搽芥辣醬。2.蘑菇切碎炒乾成「蘑菇蓉」。3.保鮮膜上鋪火腿，搽蘑菇蓉，放牛肉捲實。4.酥皮包裹，掃蛋漿界花紋。5.焗爐200°C焗25-30分鐘，靜置之後切片。',
+                steps_en: '1. Sear beef until browned, brush with mustard. 2. Chop mushrooms, cook until dry (duxelles). 3. Lay ham on cling film, spread duxelles, wrap beef tightly. 4. Wrap in pastry, brush with egg, score. 5. Bake at 200°C for 25-30 min, rest before slicing.'
+            },
+
+            // ===== 日料 (20道) =====
+            {
+                id: 66,
+                category: 'japanese',
+                emoji: '🍣',
+                name_zh: '三文鱼寿司',
+                name_yue: '三文魚壽司',
+                name_en: 'Salmon Nigiri',
+                ingredients_zh: '寿司米1杯、三文鱼刺身级200g、寿司醋、芥末、酱油',
+                ingredients_yue: '壽司米1杯、三文魚刺身級200g、壽司醋、芥辣、豉油',
+                ingredients_en: '1 cup sushi rice, 200g sashimi-grade salmon, sushi vinegar, wasabi, soy sauce',
+                steps_zh: '1.寿司米煮熟拌入寿司醋放凉。2.三文鱼切薄片。3.手蘸醋水捏饭团。4.饭团上抹芥末，盖上鱼片。5.配酱油食用。',
+                steps_yue: '1.壽司米煮熟撈入壽司醋攤凍。2.三文魚切薄片。3.手點醋水捏飯糰。4.飯糰上搽芥辣，鋪上魚片。5.配豉油食用。',
+                steps_en: '1. Cook sushi rice, fold in vinegar, cool. 2. Slice salmon thinly. 3. Shape rice with vinegared hands. 4. Dab wasabi on rice, top with fish. 5. Serve with soy sauce.'
+            },
+            {
+                id: 67,
+                category: 'japanese',
+                emoji: '🍜',
+                name_zh: '豚骨拉面',
+                name_yue: '豚骨拉麵',
+                name_en: 'Tonkotsu Ramen',
+                ingredients_zh: '拉面、猪骨、猪蹄、叉烧肉、溏心蛋、葱、海苔、蒜、姜、酱油',
+                ingredients_yue: '拉麵、豬骨、豬腳、叉燒肉、溏心蛋、蔥、紫菜、蒜、薑、豉油',
+                ingredients_en: 'Ramen noodles, pork bones, pig trotters, chashu pork, soft-boiled egg, scallions, nori, garlic, ginger, soy sauce',
+                steps_zh: '1.猪骨猪蹄焯水后大火熬煮6-8小时至汤白。2.做溏心蛋：煮6分钟过冰水剥壳，酱油腌制。3.煮面至弹牙。4.碗中盛汤，放面。5.摆上叉烧溏心蛋葱海苔。',
+                steps_yue: '1.豬骨豬腳汆水之後大火熬煮6-8小時至湯白。2.整溏心蛋：煮6分鐘過冰水剝殼，豉油醃製。3.煮麵至彈牙。4.碗入面盛湯，放麵。5.擺上叉燒溏心蛋蔥紫菜。',
+                steps_en: '1. Blanch bones and trotters, boil vigorously 6-8h until milky. 2. Make soft-boiled eggs: boil 6 min, ice bath, marinate in soy sauce. 3. Cook noodles al dente. 4. Pour broth in bowl, add noodles. 5. Top with chashu, egg, scallions, nori.'
+            },
+            {
+                id: 68,
+                category: 'japanese',
+                emoji: '🍤',
+                name_zh: '天妇罗',
+                name_yue: '天婦羅',
+                name_en: 'Tempura',
+                ingredients_zh: '大虾、红薯、茄子、天妇罗粉(或低筋面粉+冰水+蛋黄)、油、萝卜泥、天汁',
+                ingredients_yue: '大蝦、番薯、茄子、天婦羅粉(或低筋麵粉+冰水+蛋黃)、油、蘿蔔蓉、天汁',
+                ingredients_en: 'Large shrimp, sweet potato, eggplant, tempura flour (or cake flour + ice water + egg yolk), oil, grated daikon, tentsuyu sauce',
+                steps_zh: '1.食材切片，虾去壳留尾。2.冰水加蛋黄搅匀，筛入面粉略拌(有颗粒感)。3.油温170°C，食材裹薄糊油炸。4.炸至酥脆捞出沥油。5.配萝卜泥和天汁蘸食。',
+                steps_yue: '1.食材切片，蝦去殼留尾。2.冰水加蛋黃攪勻，篩入麵粉略拌(保持顆粒感)。3.油溫170°C，食材上薄糊油炸。4.炸到酥脆撈起瀝油。5.配蘿蔔蓉同天汁蘸食。',
+                steps_en: '1. Slice ingredients, peel shrimp leaving tail. 2. Mix ice water and yolk, sift in flour, mix lightly (lumpy batter). 3. Oil at 170°C, coat and fry. 4. Fry until crispy, drain. 5. Serve with grated daikon and tentsuyu.'
+            },
+            {
+                id: 69,
+                category: 'japanese',
+                emoji: '🍛',
+                name_zh: '日式咖喱饭',
+                name_yue: '日式咖哩飯',
+                name_en: 'Japanese Curry Rice',
+                ingredients_zh: '咖喱块、鸡腿肉、土豆、胡萝卜、洋葱、米饭、黄油',
+                ingredients_yue: '咖哩磚、雞髀肉、薯仔、甘筍、洋蔥、白飯、牛油',
+                ingredients_en: 'Curry roux blocks, chicken thighs, potatoes, carrots, onion, rice, butter',
+                steps_zh: '1.鸡肉土豆胡萝卜切块，洋葱切丝。2.黄油炒洋葱至焦糖色。3.加鸡肉蔬菜翻炒，加水没过。4.炖15分钟至蔬菜软烂，关火加入咖喱块。5.小火搅拌至浓稠，浇在饭上。',
+                steps_yue: '1.雞肉薯仔甘筍切件，洋蔥切絲。2.牛油炒洋蔥至焦糖色。3.加雞肉蔬菜翻炒，加水蓋過。4.燉15分鐘至蔬菜腍，熄火加入咖哩磚。5.細火攪拌至濃稠，淋喺飯上面。',
+                steps_en: '1. Cut chicken, potatoes, carrots; slice onion. 2. Caramelize onion in butter. 3. Add chicken and veggies, cover with water. 4. Simmer 15 min, turn off heat, add curry roux. 5. Stir on low until thick, pour over rice.'
+            },
+            {
+                id: 70,
+                category: 'japanese',
+                emoji: '🥟',
+                name_zh: '日式煎饺',
+                name_yue: '日式煎餃',
+                name_en: 'Gyoza',
+                ingredients_zh: '饺子皮、猪肉馅、卷心菜、韭菜、蒜、姜、酱油、香油、面粉水',
+                ingredients_yue: '餃子皮、豬肉碎、椰菜、韭菜、蒜、薑、豉油、麻油、麵粉水',
+                ingredients_en: 'Gyoza wrappers, minced pork, cabbage, chives, garlic, ginger, soy sauce, sesame oil, flour-water slurry',
+                steps_zh: '1.卷心菜切碎盐腌挤水，与肉馅调料混合。2.包入饺子皮，捏出褶子。3.平底锅摆饺子，煎至底部金黄。4.倒入面粉水(1:10)，盖盖焖蒸5分钟。5.水分收干形成脆底。',
+                steps_yue: '1.椰菜切碎鹽醃揸水，同肉碎調味料撈勻。2.包入餃子皮，捏出褶。3.平底鑊排餃子，煎到底部金黃。4.倒入麵粉水(1:10)，冚蓋燜蒸5分鐘。5.水分收乾形成脆底。',
+                steps_en: '1. Salt chopped cabbage, squeeze dry, mix with pork and seasonings. 2. Fill wrappers, pleat edges. 3. Arrange in pan, fry until bottoms are golden. 4. Pour flour-water slurry, cover and steam 5 min. 5. Cook until water evaporates, leaving crispy bottom.'
+            },
+            {
+                id: 71,
+                category: 'japanese',
+                emoji: '🍲',
+                name_zh: '寿喜烧',
+                name_yue: '壽喜燒',
+                name_en: 'Sukiyaki',
+                ingredients_zh: '肥牛片、豆腐、香菇、金针菇、茼蒿、洋葱、生鸡蛋、酱油、味醂、糖',
+                ingredients_yue: '肥牛片、豆腐、冬菇、金菇、茼蒿、洋蔥、生雞蛋、豉油、味醂、糖',
+                ingredients_en: 'Thinly sliced beef, tofu, shiitake, enoki mushrooms, chrysanthemum greens, onion, raw egg, soy sauce, mirin, sugar',
+                steps_zh: '1.调寿喜烧酱汁：酱油味醂糖。2.牛油抹锅，煎牛肉片。3.淋少许酱汁，牛肉蘸生鸡蛋吃。4.锅中加酱汁，放入蔬菜豆腐炖煮。5.边煮边吃。',
+                steps_yue: '1.調壽喜燒醬汁：豉油味醂糖。2.牛油搽鑊，煎牛肉片。3.淋少少醬汁，牛肉蘸生雞蛋食。4.鑊入面加醬汁，放入蔬菜豆腐燉煮。5.一路煮一路食。',
+                steps_en: '1. Mix sauce: soy sauce, mirin, sugar. 2. Grease pan with beef fat, sear beef slices. 3. Drizzle sauce, dip beef in raw egg. 4. Add more sauce, simmer vegetables and tofu. 5. Cook and eat at the table.'
+            },
+            {
+                id: 72,
+                category: 'japanese',
+                emoji: '🍱',
+                name_zh: '炸猪排',
+                name_yue: '吉列豬扒',
+                name_en: 'Tonkatsu',
+                ingredients_zh: '猪里脊肉2片、面粉、鸡蛋、面包糠、卷心菜丝、猪排酱、油',
+                ingredients_yue: '豬里脊肉2塊、麵粉、雞蛋、麵包糠、椰菜絲、豬扒醬、油',
+                ingredients_en: '2 pork loin cutlets, flour, eggs, panko breadcrumbs, shredded cabbage, tonkatsu sauce, oil',
+                steps_zh: '1.猪肉拍松，撒盐胡椒。2.依次裹面粉、蛋液、面包糠。3.油温170°C炸至金黄，约5-6分钟。4.切条装盘。5.配卷心菜丝和猪排酱。',
+                steps_yue: '1.豬肉拍鬆，灑鹽胡椒。2.依次上麵粉、蛋漿、麵包糠。3.油溫170°C炸到金黃，約5-6分鐘。4.切條上碟。5.配椰菜絲同豬扒醬。',
+                steps_en: '1. Pound pork, season with salt and pepper. 2. Dredge in flour, egg, panko. 3. Deep-fry at 170°C until golden, 5-6 min. 4. Slice and plate. 5. Serve with shredded cabbage and tonkatsu sauce.'
+            },
+            {
+                id: 73,
+                category: 'japanese',
+                emoji: '🍵',
+                name_zh: '抹茶冰淇淋',
+                name_yue: '抹茶雪糕',
+                name_en: 'Matcha Ice Cream',
+                ingredients_zh: '抹茶粉2勺、蛋黄3个、糖60g、牛奶200ml、鲜奶油150ml',
+                ingredients_yue: '抹茶粉2匙羹、蛋黃3個、糖60g、牛奶200ml、鮮忌廉150ml',
+                ingredients_en: '2 tbsp matcha powder, 3 egg yolks, 60g sugar, 200ml milk, 150ml heavy cream',
+                steps_zh: '1.蛋黄加糖打至发白。2.牛奶加热，冲入蛋黄中搅匀。3.倒回锅中小火煮至挂勺。4.抹茶粉用少许热水化开加入。5.加鲜奶油拌匀，冷冻搅拌。',
+                steps_yue: '1.蛋黃加糖打至發白。2.牛奶加熱，沖入蛋黃中攪勻。3.倒返落煲細火煮到掛羹。4.抹茶粉用少少熱水化開加入。5.加鮮忌廉撈勻，雪凍攪拌。',
+                steps_en: '1. Beat yolks and sugar until pale. 2. Heat milk, temper into yolks. 3. Return to low heat, cook until coating spoon. 4. Dissolve matcha in hot water, add in. 5. Add cream, chill and churn.'
+            },
+            {
+                id: 74,
+                category: 'japanese',
+                emoji: '🍙',
+                name_zh: '饭团',
+                name_yue: '飯糰',
+                name_en: 'Onigiri',
+                ingredients_zh: '米饭、金枪鱼、蛋黄酱、海苔、盐',
+                ingredients_yue: '白飯、吞拿魚、蛋黃醬、紫菜、鹽',
+                ingredients_en: 'Cooked rice, tuna, mayonnaise, nori seaweed, salt',
+                steps_zh: '1.米饭趁热加少许盐。2.金枪鱼拌蛋黄酱做馅。3.手蘸盐水，取饭团压出凹槽放入馅料。4.捏成三角形。5.底部贴海苔片。',
+                steps_yue: '1.白飯趁熱加少少鹽。2.吞拿魚撈蛋黃醬做餡。3.手點鹽水，攞飯糰壓出凹位放入餡料。4.捏成三角形。5.底部貼紫菜片。',
+                steps_en: '1. Season warm rice with salt. 2. Mix tuna with mayo for filling. 3. Wet hands with salted water, shape rice with indentation, add filling. 4. Shape into triangle. 5. Attach nori at the bottom.'
+            },
+            {
+                id: 75,
+                category: 'japanese',
+                emoji: '🥢',
+                name_zh: '亲子丼',
+                name_yue: '親子丼',
+                name_en: 'Oyakodon',
+                ingredients_zh: '鸡腿肉、鸡蛋、洋葱、米饭、酱油、味醂、高汤(出汁)',
+                ingredients_yue: '雞髀肉、雞蛋、洋蔥、白飯、豉油、味醂、上湯(出汁)',
+                ingredients_en: 'Chicken thighs, eggs, onion, rice, soy sauce, mirin, dashi broth',
+                steps_zh: '1.鸡肉切块，洋葱切丝。2.锅中加高汤酱油味醂煮开。3.放入洋葱和鸡肉煮熟。4.淋入打散的鸡蛋，半熟时关火。5.滑到米饭上。',
+                steps_yue: '1.雞肉切件，洋蔥切絲。2.煲入面加上湯豉油味醂煮滾。3.放入洋蔥同雞肉煮熟。4.淋入打散嘅雞蛋，半熟嗰陣熄火。5.滑到白飯上面。',
+                steps_en: '1. Cut chicken, slice onion. 2. Boil dashi, soy sauce, mirin in pan. 3. Cook onion and chicken. 4. Pour beaten eggs over, turn off when half-set. 5. Slide onto rice.'
+            },
+            {
+                id: 76,
+                category: 'japanese',
+                emoji: '🦀',
+                name_zh: '蟹肉茶碗蒸',
+                name_yue: '蟹肉茶碗蒸',
+                name_en: 'Crab Chawanmushi',
+                ingredients_zh: '鸡蛋2个、蟹肉、香菇、银杏、高汤(出汁)、酱油、味醂',
+                ingredients_yue: '雞蛋2隻、蟹肉、冬菇、白果、上湯(出汁)、豉油、味醂',
+                ingredients_en: '2 eggs, crab meat, shiitake mushroom, ginkgo nuts, dashi, soy sauce, mirin.',
+                steps_zh: '1.鸡蛋打散加高汤酱油味醂过滤。2.碗中放蟹肉香菇银杏。3.倒入蛋液。4.盖保鲜膜，小火蒸12分钟。5.表面光滑如布丁。',
+                steps_yue: '1.雞蛋打散加上湯豉油味醂隔渣。2.碗入面放蟹肉冬菇白果。3.倒入蛋漿。4.蓋保鮮紙，細火蒸12分鐘。5.表面光滑好似布甸。',
+                steps_en: '1. Beat eggs with dashi, soy sauce, mirin, strain. 2. Place crab, mushroom, ginkgo in cups. 3. Pour egg mixture. 4. Cover with wrap, steam on low 12 min. 5. Surface should be smooth like custard.'
+            },
+            {
+                id: 77,
+                category: 'japanese',
+                emoji: '🍜',
+                name_zh: '荞麦冷面',
+                name_yue: '冷蕎麥麵',
+                name_en: 'Zaru Soba',
+                ingredients_zh: '荞麦面、海苔丝、葱花、芥末、蘸汁(酱油味醂高汤)',
+                ingredients_yue: '蕎麥麵、紫菜絲、蔥花、芥辣、蘸汁(豉油味醂上湯)',
+                ingredients_en: 'Soba noodles, shredded nori, chopped scallions, wasabi, dipping sauce (soy sauce, mirin, dashi)',
+                steps_zh: '1.煮荞麦面至弹牙，过冰水。2.沥干放在竹席上。3.调蘸汁：酱油味醂高汤煮开冷却。4.撒海苔丝。5.蘸汁加入葱花芥末，夹面蘸食。',
+                steps_yue: '1.煮蕎麥麵至彈牙，過冰水。2.瀝乾放喺竹蓆上面。3.調蘸汁：豉油味醂上湯煮滾攤凍。4.灑紫菜絲。5.蘸汁加入蔥花芥辣，夾麵蘸食。',
+                steps_en: '1. Boil soba until al dente, rinse in ice water. 2. Drain and place on bamboo mat. 3. Make dipping sauce: simmer soy, mirin, dashi, cool. 4. Sprinkle nori on noodles. 5. Add scallions and wasabi to sauce, dip and eat.'
+            },
+            {
+                id: 78,
+                category: 'japanese',
+                emoji: '🥩',
+                name_zh: '照烧鸡肉',
+                name_yue: '照燒雞肉',
+                name_en: 'Teriyaki Chicken',
+                ingredients_zh: '鸡腿肉2块、酱油、味醂、糖、清酒、姜',
+                ingredients_yue: '雞髀肉2塊、豉油、味醂、糖、清酒、薑',
+                ingredients_en: '2 chicken thighs, soy sauce, mirin, sugar, sake, ginger',
+                steps_zh: '1.鸡肉用叉子扎孔，姜汁腌制。2.调照烧汁：酱油味醂糖清酒。3.鸡肉皮朝下煎至金黄。4.翻面，倒入照烧汁。5.收汁至浓稠包裹鸡肉。',
+                steps_yue: '1.雞肉用叉拮窿，薑汁醃製。2.調照燒汁：豉油味醂糖清酒。3.雞肉皮向下煎到金黃。4.反轉，倒入照燒汁。5.收汁至濃稠包住雞肉。',
+                steps_en: '1. Poke chicken with fork, marinate with ginger. 2. Mix teriyaki sauce: soy, mirin, sugar, sake. 3. Pan-fry skin-side down until golden. 4. Flip, pour in sauce. 5. Reduce until glaze coats chicken.'
+            },
+            {
+                id: 79,
+                category: 'japanese',
+                emoji: '🍲',
+                name_zh: '味噌汤',
+                name_yue: '麵豉湯',
+                name_en: 'Miso Soup',
+                ingredients_zh: '白味噌、嫩豆腐、海带、柴鱼片、葱',
+                ingredients_yue: '白麵豉、嫩豆腐、海帶、柴魚片、蔥',
+                ingredients_en: 'White miso paste, silken tofu, wakame seaweed, bonito flakes, scallions',
+                steps_zh: '1.海带泡水30分钟，小火煮至将沸捞出。2.加柴鱼片浸泡5分钟过滤做出汁。3.豆腐切丁，海带芽泡发。4.出汁加热(不沸腾)，溶入味噌。5.加入豆腐和海带芽，撒葱花。',
+                steps_yue: '1.海帶浸水30分鐘，細火煮到就嚟滾撈起。2.加柴魚片浸泡5分鐘隔渣做出汁。3.豆腐切粒，海帶芽浸發。4.出汁加熱(唔好滾)，溶入麵豉。5.加入豆腐同海帶芽，灑蔥花。',
+                steps_en: '1. Soak kombu 30 min, heat until almost boiling, remove. 2. Add bonito flakes, steep 5 min, strain for dashi. 3. Cube tofu, rehydrate wakame. 4. Heat dashi (don\'t boil), dissolve miso. 5. Add tofu and wakame, garnish with scallions.'
+            },
+            {
+                id: 80,
+                category: 'japanese',
+                emoji: '🍤',
+                name_zh: '炸虾',
+                name_yue: '炸蝦',
+                name_en: 'Ebi Fry',
+                ingredients_zh: '大虾6只、面粉、鸡蛋、面包糠、塔塔酱、油',
+                ingredients_yue: '大蝦6隻、麵粉、雞蛋、麵包糠、他他醬、油',
+                ingredients_en: '6 large shrimp, flour, egg, panko breadcrumbs, tartar sauce, oil',
+                steps_zh: '1.虾去壳留尾，划几刀防止卷曲。2.依次裹面粉蛋液面包糠。3.油温170°C炸2-3分钟。4.沥油摆盘。5.配塔塔酱。',
+                steps_yue: '1.蝦去殼留尾，界幾刀防止捲曲。2.依次上麵粉蛋漿麵包糠。3.油溫170°C炸2-3分鐘。4.瀝油上碟。5.配他他醬。',
+                steps_en: '1. Peel shrimp leaving tail, score to prevent curling. 2. Coat with flour, egg, panko. 3. Fry at 170°C for 2-3 min. 4. Drain and plate. 5. Serve with tartar sauce.'
+            },
+            {
+                id: 81,
+                category: 'japanese',
+                emoji: '🍢',
+                name_zh: '关东煮',
+                name_yue: '關東煮',
+                name_en: 'Oden',
+                ingredients_zh: '白萝卜、鸡蛋、魔芋、竹轮、鱼丸、昆布、柴鱼高汤、酱油、味醂',
+                ingredients_yue: '白蘿蔔、雞蛋、蒟蒻、竹輪、魚蛋、昆布、柴魚上湯、豉油、味醂',
+                ingredients_en: 'Daikon radish, eggs, konnyaku, chikuwa, fish cakes, kombu, bonito dashi, soy sauce, mirin',
+                steps_zh: '1.萝卜切厚片，鸡蛋煮熟剥壳。2.昆布高汤加酱油味醂调味。3.所有材料放入汤中。4.小火慢炖1小时以上。5.取喜欢的食材，蘸黄芥末吃。',
+                steps_yue: '1.蘿蔔切厚片，雞蛋煮熟剝殼。2.昆布上湯加豉油味醂調味。3.所有材料放入湯入面。4.細火慢燉1個鐘以上。5.攞鍾意嘅食材，蘸黃芥辣食。',
+                steps_en: '1. Cut radish thick, boil and peel eggs. 2. Season kombu dashi with soy and mirin. 3. Add all ingredients to broth. 4. Simmer on low for 1h+. 5. Pick desired items, dip in Japanese mustard.'
+            },
+            {
+                id: 82,
+                category: 'japanese',
+                emoji: '🥟',
+                name_zh: '章鱼烧',
+                name_yue: '章魚燒',
+                name_en: 'Takoyaki',
+                ingredients_zh: '章鱼烧粉(或低筋面粉)、鸡蛋、水、章鱼丁、天妇罗碎、红姜、葱、章鱼烧酱、蛋黄酱、柴鱼片',
+                ingredients_yue: '章魚燒粉(或低筋麵粉)、雞蛋、水、章魚粒、天婦羅碎、紅薑、蔥、章魚燒醬、蛋黃醬、柴魚片',
+                ingredients_en: 'Takoyaki flour (or cake flour), eggs, water, diced octopus, tempura bits, pickled ginger, scallions, takoyaki sauce, mayo, bonito flakes',
+                steps_zh: '1.调面糊：面粉鸡蛋水搅匀。2.章鱼烧模具加热刷油。3.倒入面糊至满，放章鱼丁等配料。4.用竹签翻转成球形。5.装盘淋酱和蛋黄酱，撒柴鱼片。',
+                steps_yue: '1.開麵糊：麵粉雞蛋水攪勻。2.章魚燒模具加熱掃油。3.倒入麵糊至滿，放章魚粒等配料。4.用竹籤反轉成球形。5.上碟淋醬同蛋黃醬，灑柴魚片。',
+                steps_en: '1. Make batter: mix flour, egg, water. 2. Heat oiled takoyaki pan. 3. Fill molds with batter, add octopus and fillings. 4. Turn with picks to form balls. 5. Plate, drizzle sauce and mayo, top with bonito.'
+            },
+            {
+                id: 83,
+                category: 'japanese',
+                emoji: '🍛',
+                name_zh: '蛋包饭',
+                name_yue: '蛋包飯',
+                name_en: 'Omurice',
+                ingredients_zh: '米饭、鸡肉丁、洋葱、番茄酱、鸡蛋2个、黄油、牛奶',
+                ingredients_yue: '白飯、雞肉粒、洋蔥、茄汁、雞蛋2隻、牛油、牛奶',
+                ingredients_en: 'Rice, diced chicken, onion, ketchup, 2 eggs, butter, milk',
+                steps_zh: '1.黄油炒洋葱鸡肉，加米饭番茄酱做成茄汁炒饭。2.鸡蛋加牛奶打散。3.平底锅摊成蛋皮。4.蛋皮包入炒饭。5.整形后淋番茄酱。',
+                steps_yue: '1.牛油炒洋蔥雞肉，加白飯茄汁做成茄汁炒飯。2.雞蛋加牛奶打散。3.平底鑊攤成蛋皮。4.蛋皮包入炒飯。5.整形之後淋茄汁。',
+                steps_en: '1. Sauté onion and chicken in butter, add rice and ketchup for seasoned rice. 2. Beat eggs with milk. 3. Make thin omelette in pan. 4. Wrap seasoned rice in omelette. 5. Shape and drizzle ketchup.'
+            },
+            {
+                id: 84,
+                category: 'japanese',
+                emoji: '🍠',
+                name_zh: '烤红薯',
+                name_yue: '烤番薯',
+                name_en: 'Yaki-imo',
+                ingredients_zh: '日本番薯(安纳芋或红春香)、少许盐(可选)',
+                ingredients_yue: '日本番薯(安納芋或紅春香)、少少鹽(可選)',
+                ingredients_en: 'Japanese sweet potatoes (like Annou-imo), optional pinch of salt',
+                steps_zh: '1.红薯洗净擦干。2.烤箱160°C慢烤60-90分钟。3.至内部糖化流出蜜汁。4.切开享用。5.也可用炭火或石头烤。',
+                steps_yue: '1.番薯洗淨抹乾。2.焗爐160°C慢焗60-90分鐘。3.至入面糖化流出蜜汁。4.切開享用。5.亦可以用炭火或石頭烤。',
+                steps_en: '1. Wash and dry sweet potatoes. 2. Slow-bake at 160°C for 60-90 min. 3. Until sugars caramelize and syrup oozes. 4. Split open and enjoy. 5. Can also roast over charcoal or hot stones.'
+            },
+            {
+                id: 85,
+                category: 'japanese',
+                emoji: '🍜',
+                name_zh: '炒乌冬面',
+                name_yue: '炒烏冬',
+                name_en: 'Yaki Udon',
+                ingredients_zh: '乌冬面1包、猪肉片、卷心菜、胡萝卜、酱油、蚝油、柴鱼片、红姜',
+                ingredients_yue: '烏冬1包、豬肉片、椰菜、甘筍、豉油、蠔油、柴魚片、紅薑',
+                ingredients_en: '1 pack udon noodles, sliced pork, cabbage, carrot, soy sauce, oyster sauce, bonito flakes, pickled ginger',
+                steps_zh: '1.乌冬面过热水散开。2.炒猪肉至变色加蔬菜。3.加入乌冬面翻炒。4.加酱油蚝油调味。5.装盘撒柴鱼片，配红姜。',
+                steps_yue: '1.烏冬過熱水散開。2.炒豬肉至變色加蔬菜。3.加入烏冬翻炒。4.加豉油蠔油調味。5.上碟灑柴魚片，配紅薑。',
+                steps_en: '1. Loosen udon in hot water. 2. Stir-fry pork, add vegetables. 3. Add udon, toss. 4. Season with soy and oyster sauce. 5. Plate, top with bonito flakes, serve with pickled ginger.'
+            },
+
+            // ===== 韩餐 (8道) =====
+            {
+                id: 86,
+                category: 'korean',
+                emoji: '🥘',
+                name_zh: '韩式拌饭',
+                name_yue: '韓式拌飯',
+                name_en: 'Bibimbap',
+                ingredients_zh: '米饭、牛肉、菠菜、豆芽、胡萝卜、西葫芦、香菇、鸡蛋、辣酱、香油、芝麻',
+                ingredients_yue: '白飯、牛肉、菠菜、芽菜、甘筍、翠玉瓜、冬菇、雞蛋、辣醬、麻油、芝麻',
+                ingredients_en: 'Rice, beef, spinach, bean sprouts, carrot, zucchini, mushroom, egg, gochujang, sesame oil, sesame seeds',
+                steps_zh: '1.各种蔬菜分别焯水或炒熟调味。2.牛肉切丝腌制炒熟。3.煎一个荷包蛋。4.碗中盛饭，摆上所有食材。5.加辣酱香油拌匀食用。',
+                steps_yue: '1.各種蔬菜分別汆水或炒熟調味。2.牛肉切絲醃製炒熟。3.煎一隻荷包蛋。4.碗入面盛飯，擺上所有食材。5.加辣醬麻油撈勻食用。',
+                steps_en: '1. Blanch or stir-fry each vegetable separately, season. 2. Slice and marinate beef, cook. 3. Fry an egg sunny-side up. 4. Place rice in bowl, arrange toppings. 5. Add gochujang and sesame oil, mix well.'
+            },
+            {
+                id: 87,
+                category: 'korean',
+                emoji: '🥩',
+                name_zh: '韩式烤肉',
+                name_yue: '韓式烤肉',
+                name_en: 'Korean BBQ (Bulgogi)',
+                ingredients_zh: '牛五花肉300g、梨汁、酱油、糖、蒜、葱、香油、生菜、蒜片、辣椒',
+                ingredients_yue: '牛五花肉300g、梨汁、豉油、糖、蒜、蔥、麻油、生菜、蒜片、辣椒',
+                ingredients_en: '300g sliced beef brisket, pear juice, soy sauce, sugar, garlic, scallions, sesame oil, lettuce, sliced garlic, chili peppers',
+                steps_zh: '1.牛肉片加梨汁酱油糖蒜葱香油腌制。2.烤盘加热，放上肉片。3.快速翻烤至变色。4.生菜包肉，加蒜片辣椒。5.蘸酱食用。',
+                steps_yue: '1.牛肉片加梨汁豉油糖蒜蔥麻油醃製。2.烤盤加熱，放上肉片。3.快速反烤至變色。4.生菜包肉，加蒜片辣椒。5.蘸醬食用。',
+                steps_en: '1. Marinate beef with pear juice, soy sauce, sugar, garlic, scallions, sesame oil. 2. Heat grill, place meat. 3. Quickly cook both sides. 4. Wrap in lettuce with garlic and chili. 5. Dip in sauce and enjoy.'
+            },
+            {
+                id: 88,
+                category: 'korean',
+                emoji: '🍲',
+                name_zh: '部队锅',
+                name_yue: '部隊鍋',
+                name_en: 'Budae Jjigae (Army Stew)',
+                ingredients_zh: '午餐肉、小香肠、年糕、豆腐、泡菜、方便面、芝士、辣椒酱、高汤',
+                ingredients_yue: '午餐肉、小香腸、年糕、豆腐、泡菜、即食麵、芝士、辣椒醬、上湯',
+                ingredients_en: 'Spam, mini sausages, rice cakes, tofu, kimchi, instant noodles, cheese, gochujang, broth',
+                steps_zh: '1.所有材料切好摆入锅中。2.中间放辣椒酱和泡菜。3.倒入高汤煮开。4.加入方便面和芝士。5.面熟即可食用。',
+                steps_yue: '1.所有材料切好排入煲入面。2.中間放辣椒醬同泡菜。3.倒入上湯煮滾。4.加入即食麵同芝士。5.麵熟就食得。',
+                steps_en: '1. Cut and arrange all ingredients in pot. 2. Place gochujang and kimchi in center. 3. Pour in broth, bring to boil. 4. Add noodles and cheese. 5. Eat when noodles are cooked.'
+            },
+            {
+                id: 89,
+                category: 'korean',
+                emoji: '🥬',
+                name_zh: '泡菜',
+                name_yue: '泡菜',
+                name_en: 'Kimchi',
+                ingredients_zh: '大白菜1棵、粗盐、辣椒粉、鱼露、虾酱、蒜、姜、糖、萝卜丝、葱段',
+                ingredients_yue: '大白菜1棵、粗鹽、辣椒粉、魚露、蝦醬、蒜、薑、糖、蘿蔔絲、蔥段',
+                ingredients_en: '1 napa cabbage, coarse salt, gochugaru (chili flakes), fish sauce, salted shrimp, garlic, ginger, sugar, shredded radish, scallions',
+                steps_zh: '1.白菜剖开用盐水腌制4小时。2.冲洗挤干。3.调辣椒酱：辣椒粉鱼露虾酱蒜姜糖萝卜丝。4.将酱料抹在每层白菜上。5.装盒发酵，室温1-2天后冷藏。',
+                steps_yue: '1.白菜剖開用鹽水醃製4個鐘。2.沖洗揸乾。3.調辣椒醬：辣椒粉魚露蝦醬蒜薑糖蘿蔔絲。4.將醬料搽喺每層白菜上面。5.入盒發酵，室溫1-2日之後雪藏。',
+                steps_en: '1. Split cabbage, brine 4h. 2. Rinse and squeeze dry. 3. Make paste: chili flakes, fish sauce, shrimp, garlic, ginger, sugar, radish. 4. Spread paste between each leaf. 5. Pack in container, ferment 1-2 days at room temp, then refrigerate.'
+            },
+            {
+                id: 90,
+                category: 'korean',
+                emoji: '🍗',
+                name_zh: '韩式炸鸡',
+                name_yue: '韓式炸雞',
+                name_en: 'Korean Fried Chicken',
+                ingredients_zh: '鸡翅鸡腿、面粉、淀粉、蒜、辣酱、番茄酱、蜂蜜、芝麻',
+                ingredients_yue: '雞翼雞髀、麵粉、生粉、蒜、辣醬、茄汁、蜜糖、芝麻',
+                ingredients_en: 'Chicken wings and drumsticks, flour, cornstarch, garlic, gochujang, ketchup, honey, sesame seeds',
+                steps_zh: '1.鸡肉腌制后裹粉。2.初炸160°C 8分钟，捞出。3.升温180°C复炸至酥脆。4.调酱：辣酱蒜番茄酱蜂蜜。5.酱汁裹匀炸鸡，撒芝麻。',
+                steps_yue: '1.雞肉醃製之後上粉。2.初炸160°C 8分鐘，撈起。3.升溫180°C翻炸至酥脆。4.調醬：辣醬蒜茄汁蜜糖。5.醬汁包勻炸雞，灑芝麻。',
+                steps_en: '1. Marinate chicken, coat with flour mix. 2. First fry at 160°C for 8 min, drain. 3. Second fry at 180°C until crispy. 4. Make sauce: gochujang, garlic, ketchup, honey. 5. Toss chicken in sauce, sprinkle sesame.'
+            },
+            {
+                id: 91,
+                category: 'korean',
+                emoji: '🍜',
+                name_zh: '冷面',
+                name_yue: '冷麵',
+                name_en: 'Naengmyeon',
+                ingredients_zh: '荞麦面、牛肉高汤(冰镇)、黄瓜丝、梨丝、鸡蛋、泡菜、醋、黄芥末',
+                ingredients_yue: '蕎麥麵、牛肉上湯(冰凍)、青瓜絲、梨絲、雞蛋、泡菜、醋、黃芥辣',
+                ingredients_en: 'Buckwheat noodles, ice-cold beef broth, shredded cucumber, sliced pear, egg, kimchi, vinegar, yellow mustard',
+                steps_zh: '1.荞麦面煮熟过冰水。2.碗中放面，倒入冰牛肉高汤。3.摆上黄瓜丝梨丝半个鸡蛋和泡菜。4.加醋和黄芥末调味。5.拌匀食用。',
+                steps_yue: '1.蕎麥麵煮熟過冰水。2.碗入面放麵，倒入凍牛肉上湯。3.擺上青瓜絲梨絲半隻雞蛋同泡菜。4.加醋同黃芥辣調味。5.撈勻食用。',
+                steps_en: '1. Cook noodles, rinse in ice water. 2. Place noodles in bowl, pour ice-cold broth. 3. Arrange cucumber, pear, egg half, and kimchi. 4. Season with vinegar and mustard. 5. Mix and eat.'
+            },
+            {
+                id: 92,
+                category: 'korean',
+                emoji: '🫕',
+                name_zh: '大酱汤',
+                name_yue: '大醬湯',
+                name_en: 'Doenjang Jjigae',
+                ingredients_zh: '韩式大酱、豆腐、西葫芦、土豆、洋葱、辣椒、蛤蜊或牛肉、高汤',
+                ingredients_yue: '韓式大醬、豆腐、翠玉瓜、薯仔、洋蔥、辣椒、蜆或牛肉、上湯',
+                ingredients_en: 'Korean soybean paste, tofu, zucchini, potato, onion, chili, clams or beef, broth',
+                steps_zh: '1.高汤煮开，溶入大酱。2.加土豆洋葱先煮。3.再加西葫芦豆腐。4.最后加蛤蜊煮至开口。5.撒辣椒段。',
+                steps_yue: '1.上湯煮滾，溶入大醬。2.加薯仔洋蔥先煮。3.再加翠玉瓜豆腐。4.最後加蜆煮到開口。5.灑辣椒段。',
+                steps_en: '1. Bring broth to boil, dissolve soybean paste. 2. Add potato and onion first. 3. Then add zucchini and tofu. 4. Finally add clams, cook until open. 5. Garnish with chili slices.'
+            },
+            {
+                id: 93,
+                category: 'korean',
+                emoji: '🍚',
+                name_zh: '紫菜包饭',
+                name_yue: '紫菜包飯',
+                name_en: 'Kimbap (Gimbap)',
+                ingredients_zh: '海苔、米饭、火腿、鸡蛋、黄瓜、胡萝卜、腌萝卜、香油、芝麻',
+                ingredients_yue: '紫菜、米飯、火腿、雞蛋、青瓜、甘筍、醃蘿蔔、麻油、芝麻',
+                ingredients_en: 'Nori sheets, rice, ham, egg, cucumber, carrot, pickled radish, sesame oil, sesame seeds',
+                steps_zh: '1.米饭拌香油和芝麻。2.鸡蛋煎成蛋皮切条，蔬菜切条焯水。3.海苔铺竹帘上，铺米饭留边。4.摆上所有食材。5.卷紧，切片。',
+                steps_yue: '1.米飯撈麻油同芝麻。2.雞蛋煎成蛋皮切條，蔬菜切條汆水。3.紫菜鋪竹簾上，鋪米飯留邊。4.擺上所有食材。5.捲實，切片。',
+                steps_en: '1. Mix rice with sesame oil and seeds. 2. Fry egg into sheet, cut strips; blanch veggies. 3. Place nori on mat, spread rice leaving edge. 4. Arrange fillings. 5. Roll tightly, slice.'
+            },
+
+            // ===== 东南亚菜 (7道) =====
+            {
+                id: 94,
+                category: 'seasian',
+                emoji: '🍜',
+                name_zh: '冬阴功汤',
+                name_yue: '冬陰功湯',
+                name_en: 'Tom Yum Goong',
+                ingredients_zh: '虾、香茅、南姜、柠檬叶、辣椒、鱼露、柠檬汁、椰奶(可选)、蘑菇',
+                ingredients_yue: '蝦、香茅、南薑、檸檬葉、辣椒、魚露、檸檬汁、椰奶(可選)、蘑菇',
+                ingredients_en: 'Shrimp, lemongrass, galangal, kaffir lime leaves, chili, fish sauce, lime juice, coconut milk (optional), mushrooms',
+                steps_zh: '1.香茅南姜拍开，煮水出香。2.加柠檬叶辣椒蘑菇。3.放入虾煮至变红。4.加鱼露柠檬汁调味。5.可选加椰奶变浓汤版。',
+                steps_yue: '1.香茅南薑拍開，煮水出香。2.加檸檬葉辣椒蘑菇。3.放入蝦煮到變紅。4.加魚露檸檬汁調味。5.可選加椰奶變濃湯版。',
+                steps_en: '1. Bruise lemongrass and galangal, boil for fragrance. 2. Add lime leaves, chili, mushrooms. 3. Add shrimp, cook until pink. 4. Season with fish sauce and lime juice. 5. Add coconut milk for creamy version.'
+            },
+            {
+                id: 95,
+                category: 'seasian',
+                emoji: '🍛',
+                name_zh: '泰式绿咖喱',
+                name_yue: '泰式青咖哩',
+                name_en: 'Thai Green Curry',
+                ingredients_zh: '绿咖喱酱、鸡肉、椰奶、茄子、竹笋、罗勒、鱼露、糖',
+                ingredients_yue: '青咖哩醬、雞肉、椰奶、茄子、竹筍、羅勒、魚露、糖',
+                ingredients_en: 'Green curry paste, chicken, coconut milk, eggplant, bamboo shoots, Thai basil, fish sauce, sugar',
+                steps_zh: '1.少量椰奶炒绿咖喱酱至出香。2.加鸡肉翻炒。3.倒入剩余椰奶。4.加茄子竹笋煮熟。5.加鱼露糖调味，撒罗勒叶。',
+                steps_yue: '1.少少椰奶炒青咖哩醬至出香。2.加雞肉翻炒。3.倒入剩低嘅椰奶。4.加茄子竹筍煮熟。5.加魚露糖調味，灑羅勒葉。',
+                steps_en: '1. Fry curry paste in a little coconut milk until fragrant. 2. Add chicken, stir. 3. Pour in remaining coconut milk. 4. Add eggplant and bamboo shoots, cook. 5. Season with fish sauce and sugar, top with basil.'
+            },
+            {
+                id: 96,
+                category: 'seasian',
+                emoji: '🍲',
+                name_zh: '越南河粉',
+                name_yue: '越南牛肉河',
+                name_en: 'Pho',
+                ingredients_zh: '河粉、牛肉薄片、牛骨高汤、八角、肉桂、姜、洋葱、豆芽、薄荷、青柠、辣椒',
+                ingredients_yue: '河粉、牛肉薄片、牛骨上湯、八角、肉桂、薑、洋蔥、芽菜、薄荷、青檸、辣椒',
+                ingredients_en: 'Rice noodles, thinly sliced beef, beef bone broth, star anise, cinnamon, ginger, onion, bean sprouts, mint, lime, chili',
+                steps_zh: '1.牛骨姜洋葱八角肉桂熬高汤4-6小时。2.河粉烫熟放入碗中。3.铺上生牛肉薄片。4.浇滚热高汤烫熟牛肉。5.配豆芽薄荷青柠辣椒。',
+                steps_yue: '1.牛骨薑洋蔥八角肉桂熬上湯4-6小時。2.河粉淥熟放入碗入面。3.鋪上生牛肉薄片。4.淋滾熱上湯淥熟牛肉。5.配芽菜薄荷青檸辣椒。',
+                steps_en: '1. Simmer bones with ginger, onion, star anise, cinnamon 4-6h. 2. Blanch noodles, place in bowl. 3. Lay raw beef slices on top. 4. Pour boiling broth over to cook beef. 5. Serve with sprouts, mint, lime, chili.'
+            },
+            {
+                id: 97,
+                category: 'seasian',
+                emoji: '🍗',
+                name_zh: '海南鸡饭',
+                name_yue: '海南雞飯',
+                name_en: 'Hainanese Chicken Rice',
+                ingredients_zh: '三黄鸡1只、大米、姜、蒜、香兰叶、黄瓜、辣椒酱、酱油',
+                ingredients_yue: '三黃雞1隻、米、薑、蒜、香蘭葉、青瓜、辣椒醬、豉油',
+                ingredients_en: '1 whole chicken, rice, ginger, garlic, pandan leaves, cucumber, chili sauce, soy sauce',
+                steps_zh: '1.鸡浸熟，过冰水。2.鸡油炒香姜蒜，加米翻炒。3.加鸡汤和香兰叶煮饭。4.鸡斩件摆盘。5.配饭、黄瓜、辣椒酱。',
+                steps_yue: '1.雞浸熟，過冰水。2.雞油炒香薑蒜，加米翻炒。3.加雞湯同香蘭葉煮飯。4.雞斬件上碟。5.配飯、青瓜、辣椒醬。',
+                steps_en: '1. Poach chicken, plunge in ice water. 2. Fry ginger and garlic in chicken fat, add rice. 3. Cook rice with chicken broth and pandan leaves. 4. Chop chicken, arrange on plate. 5. Serve with rice, cucumber, chili sauce.'
+            },
+            {
+                id: 98,
+                category: 'seasian',
+                emoji: '🍢',
+                name_zh: '沙爹烤肉串',
+                name_yue: '沙嗲串燒',
+                name_en: 'Satay',
+                ingredients_zh: '鸡腿肉300g、沙爹酱(花生酱椰奶咖喱粉)、竹签、黄瓜、洋葱',
+                ingredients_yue: '雞髀肉300g、沙嗲醬(花生醬椰奶咖哩粉)、竹籤、青瓜、洋蔥',
+                ingredients_en: '300g chicken thigh, satay sauce (peanut butter, coconut milk, curry powder), skewers, cucumber, onion',
+                steps_zh: '1.鸡肉切块用沙爹酱腌制。2.串在竹签上。3.炭火或烤箱烤至金黄。4.刷上沙爹酱。5.配黄瓜洋葱和花生酱蘸料。',
+                steps_yue: '1.雞肉切件用沙嗲醬醃製。2.串喺竹籤上面。3.炭火或焗爐烤到金黃。4.搽上沙嗲醬。5.配青瓜洋蔥同花生醬蘸料。',
+                steps_en: '1. Cube chicken, marinate in satay sauce. 2. Thread onto skewers. 3. Grill over charcoal or broil until golden. 4. Brush with more satay sauce. 5. Serve with cucumber, onion, and peanut dipping sauce.'
+            },
+            {
+                id: 99,
+                category: 'seasian',
+                emoji: '🍚',
+                name_zh: '印尼炒饭',
+                name_yue: '印尼炒飯',
+                name_en: 'Nasi Goreng',
+                ingredients_zh: '隔夜饭、鸡蛋、鸡肉或虾、甜酱油、辣椒酱、虾膏、葱、黄瓜、番茄',
+                ingredients_yue: '隔夜飯、雞蛋、雞肉或蝦、甜豉油、辣椒醬、蝦膏、蔥、青瓜、番茄',
+                ingredients_en: 'Day-old rice, eggs, chicken or shrimp, kecap manis, chili paste, shrimp paste, shallots, cucumber, tomato',
+                steps_zh: '1.热油炒香虾膏和辣椒酱。2.加鸡肉或虾炒熟。3.打入鸡蛋炒散。4.加米饭甜酱油大火翻炒。5.配黄瓜番茄片。',
+                steps_yue: '1.熱油炒香蝦膏同辣椒醬。2.加雞肉或蝦炒熟。3.打隻雞蛋炒散。4.加米飯甜豉油大火翻炒。5.配青瓜番茄片。',
+                steps_en: '1. Fry shrimp paste and chili paste in oil. 2. Add chicken or shrimp, cook. 3. Crack egg in, scramble. 4. Add rice and kecap manis, stir-fry on high. 5. Serve with cucumber and tomato slices.'
+            },
+            {
+                id: 100,
+                category: 'seasian',
+                emoji: '🥗',
+                name_zh: '青木瓜沙拉',
+                name_yue: '青木瓜沙律',
+                name_en: 'Som Tum (Green Papaya Salad)',
+                ingredients_zh: '青木瓜、小番茄、长豆角、花生、虾米、辣椒、蒜、鱼露、柠檬汁、糖',
+                ingredients_yue: '青木瓜、車厘茄、豆角、花生、蝦米、辣椒、蒜、魚露、檸檬汁、糖',
+                ingredients_en: 'Green papaya, cherry tomatoes, long beans, peanuts, dried shrimp, chili, garlic, fish sauce, lime juice, sugar',
+                steps_zh: '1.青木瓜刨丝，豆角切段。2.蒜辣椒虾米捣碎。3.加鱼露柠檬汁糖调汁。4.加入木瓜丝番茄豆角捣拌。5.撒花生碎。',
+                steps_yue: '1.青木瓜刨絲，豆角切段。2.蒜辣椒蝦米舂碎。3.加魚露檸檬汁糖調汁。4.加入木瓜絲番茄豆角舂撈。5.灑花生碎。',
+                steps_en: '1. Shred papaya, cut long beans. 2. Pound garlic, chili, dried shrimp. 3. Mix fish sauce, lime juice, sugar. 4. Add papaya, tomatoes, beans, pound and toss. 5. Sprinkle crushed peanuts.'
+            }
+        ];
+
+        // ==================== 函数 ====================
+        function getCategoryClass(category) {
+            const map = {
+                chinese: 'tag-chinese',
+                western: 'tag-western',
+                japanese: 'tag-japanese',
+                korean: 'tag-korean',
+                seasian: 'tag-seasian'
+            };
+            return map[category] || 'tag-chinese';
+        }
+
+        function getCategoryName(category) {
+            return i18nDict[currentLang].categoryNames[category] || category;
+        }
+
+        function getI18nField(dish, fieldBase) {
+            const key = fieldBase + '_' + currentLang;
+            const fallbackKey = fieldBase + '_zh';
+            return dish[key] || dish[fallbackKey] || '';
+        }
+
+        function updateCard(dish) {
+            const card = document.getElementById('dishCard');
+            const nameEl = document.getElementById('cardDishName');
+            const catEl = document.getElementById('cardCategory');
+            const ingLabel = document.getElementById('cardIngredientsLabel');
+            const ingEl = document.getElementById('cardIngredients');
+            const stepLabel = document.getElementById('cardStepsLabel');
+            const stepEl = document.getElementById('cardSteps');
+
+            card.classList.remove('placeholder', 'spinning', 'reveal');
+
+            if (dish) {
+                const name = getI18nField(dish, 'name');
+                const ingredients = getI18nField(dish, 'ingredients');
+                const steps = getI18nField(dish, 'steps');
+                const category = getCategoryName(dish.category);
+
+                card.querySelector('.emoji-big').textContent = dish.emoji;
+                nameEl.textContent = name;
+                catEl.textContent = category;
+                catEl.className = 'category-tag ' + getCategoryClass(dish.category);
+                ingLabel.textContent = i18nDict[currentLang].ingredientsLabel;
+                ingEl.textContent = ingredients;
+                stepLabel.textContent = i18nDict[currentLang].stepsLabel;
+                stepEl.textContent = steps;
+
+                // Trigger reveal animation
+                void card.offsetWidth;
+                card.classList.add('reveal');
+            } else {
+                // Placeholder
+                card.querySelector('.emoji-big').textContent = '🎴';
+                nameEl.textContent = i18nDict[currentLang].placeholderName;
+                catEl.textContent = '---';
+                catEl.className = 'category-tag tag-chinese';
+                ingLabel.textContent = i18nDict[currentLang].ingredientsLabel;
+                ingEl.textContent = i18nDict[currentLang].placeholderIngredients;
+                stepLabel.textContent = i18nDict[currentLang].stepsLabel;
+                stepEl.textContent = i18nDict[currentLang].placeholderSteps;
+                card.classList.add('placeholder');
+            }
+        }
+
+        function drawDish() {
+            if (isDrawing) return;
+            isDrawing = true;
+
+            const btn = document.getElementById('drawBtn');
+            const card = document.getElementById('cardDish');
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="btn-icon">🎰</span> ' + i18nDict[currentLang].drawing;
+
+            // Spin animation
+            card.classList.add('spinning');
+
+            // Random selection after spin animation timing
+            const randomIndex = Math.floor(Math.random() * dishesDB.length);
+            const selectedDish = dishesDB[randomIndex];
+
+            setTimeout(() => {
+                updateCard(selectedDish);
+                card.classList.remove('spinning');
+                card.classList.add('reveal');
+
+                btn.disabled = false;
+                btn.innerHTML = '<span class="btn-icon">🎲</span> ' + i18nDict[currentLang].drawBtn;
+
+                showToast(i18nDict[currentLang].toastDrawn);
+                isDrawing = false;
+            }, 600);
+        }
+
+        function switchLang(lang) {
+            currentLang = lang;
+
+            // Update active button
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+
+            // Re-render current card or placeholder
+            const card = document.getElementById('dishCard');
+            const nameEl = document.getElementById('cardDishName');
+            const currentDishId = card.dataset.dishId;
+
+            if (currentDishId && !card.classList.contains('placeholder')) {
+                const dish = dishesDB.find(d => d.id === parseInt(currentDishId));
+                if (dish) updateCard(dish);
+            } else {
+                updateCard(null);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1800);
+        }
+
+        // ==================== Initialize ====================
+        function init() {
+            updateCard(null);
+            // Store dish ID on card for re-rendering after language switch
+            const card = document.getElementById('dishCard');
+            const originalUpdateCard = updateCard;
+            updateCard = function(dish) {
+                if (dish) {
+                    card.dataset.dishId = dish.id;
+                } else {
+                    card.dataset.dishId = '';
+                }
+                originalUpdateCard(dish);
+            };
+        }
+
+        init();
+
+        console.log('🍽️ 美食抽签小程序已就绪！');
+        console.log('📊 共加载 ' + dishesDB.length + ' 道菜品');
+        console.log('🌐 支持语言: 普通话 | 粤语 | English');
+        console.log('👆 点击按钮开始抽签吧！');
+    </script>
+</body>
+</html>
